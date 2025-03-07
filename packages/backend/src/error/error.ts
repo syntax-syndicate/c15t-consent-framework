@@ -14,10 +14,10 @@ import {
  * @example
  * ```typescript
  * // Create and throw a c15t error
- * throw new C15TError('Failed to update user preferences', {
+ * throw new C15TError('Failed to update subject preferences', {
  *   code: BASE_ERROR_CODES.FAILED_TO_UPDATE_CONSENT,
  *   status: 400,
- *   data: { userId: 'user123', preferences: { analytics: true } }
+ *   data: { subjectId: 'sub_x1pftyoufsm7xgo1kv', preferences: { analytics: true } }
  * });
  *
  * // Create an error from an HTTP response

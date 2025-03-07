@@ -108,6 +108,7 @@ export interface Adapter {
 		model: Model;
 		where: Where<Model>;
 		select?: Array<keyof Result>;
+		sortBy?: SortOptions<Model>;
 	}) => Promise<Result | null>;
 
 	/** Finds multiple records matching the where conditions */
@@ -169,15 +170,15 @@ export interface Adapter {
 	 * ```typescript
 	 * const result = await adapter.transaction({
 	 *   callback: async (tx) => {
-	 *     const user = await tx.create({
-	 *       model: 'user',
+	 *     const subject = await tx.create({
+	 *       model: 'subject',
 	 *       data: { name: 'John Doe' }
 	 *     });
 	 *     await tx.create({
 	 *       model: 'profile',
-	 *       data: { userId: user.id, bio: 'Test bio' }
+	 *       data: { subjectId: subject.id, bio: 'Test bio' }
 	 *     });
-	 *     return user;
+	 *     return subject;
 	 *   }
 	 * });
 	 * ```

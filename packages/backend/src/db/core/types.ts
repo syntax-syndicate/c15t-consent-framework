@@ -36,15 +36,6 @@ export type EntityName = keyof C15TDBSchema;
  * Used when creating or updating entity records.
  *
  * @template TEntity - The entity type being operated on
- *
- * @example
- * ```typescript
- * // Define input for creating a user
- * const userInput: EntityInput<'user'> = {
- *   name: 'John Doe',
- *   email: 'john@example.com'
- * };
- * ```
  */
 export type EntityInput<TEntity extends EntityName> = Partial<
 	EntityTypeMap[TEntity]
@@ -56,17 +47,6 @@ export type EntityInput<TEntity extends EntityName> = Partial<
  * Represents the full structure of an entity as returned from queries.
  *
  * @template TEntity - The entity type being returned
- *
- * @example
- * ```typescript
- * // Type for a user retrieved from the database
- * const user: EntityOutput<'user'> = {
- *   id: '123',
- *   name: 'John Doe',
- *   email: 'john@example.com',
- *   createdAt: new Date()
- * };
- * ```
  */
 export type EntityOutput<TEntity extends EntityName> = EntityTypeMap[TEntity] &
 	Record<string, unknown>;

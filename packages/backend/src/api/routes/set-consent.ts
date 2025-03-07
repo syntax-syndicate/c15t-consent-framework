@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Adapter } from '~/db/adapters/types';
-import type { Consent, inferRecord } from '~/db/schema';
+import type { Consent, ConsentRecord } from '~/db/schema';
 import { BASE_ERROR_CODES, C15TError } from '~/error';
 import type { C15TContext } from '../../types';
 import { createAuthEndpoint } from '../call';
@@ -19,8 +19,8 @@ export type ConsentType = z.infer<typeof ConsentType>;
 
 // Base schema for all consent types
 const baseConsentSchema = z.object({
-	userId: z.string().optional(),
-	externalUserId: z.string().optional(),
+	subjectId: z.string().optional(),
+	externalSubjectId: z.string().optional(),
 	domain: z.string(),
 	type: ConsentType,
 	metadata: z.record(z.unknown()).optional(),
@@ -60,7 +60,7 @@ export interface SetConsentResponse {
 /**
  * Endpoint for creating a new consent record.
  *
- * This endpoint allows clients to create a new consent record for a user. It supports
+ * This endpoint allows clients to create a new consent record for a subject. It supports
  * different types of consent:
  * - cookie_banner: For cookie preferences
  * - privacy_policy: For privacy policy acceptance
@@ -86,7 +86,7 @@ export interface SetConsentResponse {
  *   },
  *   "metadata": {
  *     "source": "banner",
- *     "displayedTo": "user",
+ *     "displayedTo": "subject",
  *     "language": "en-US"
  *   }
  * }
@@ -94,7 +94,7 @@ export interface SetConsentResponse {
  * // Privacy Policy
  * {
  *   "type": "privacy_policy",
- *   "userId": "550e8400-e29b-41d4-a716-446655440000",
+ *   "subjectId": "sub_x1pftyoufsm7xgo1kv",
  *   "domain": "example.com",
  *   "policyId": "pol_xyz789",
  *   "metadata": {
@@ -113,19 +113,19 @@ export const setConsent = createAuthEndpoint(
 	async (ctx) => {
 		try {
 			const body = setConsentSchema.parse(ctx.body);
-			const { type, userId, externalUserId, domain, metadata } = body;
+			const { type, subjectId, externalSubjectId, domain, metadata } = body;
 			const { registry, adapter } = ctx.context as C15TContext;
 
-			// Find or create user
-			const user = await registry.findOrCreateUser({
-				userId,
-				externalUserId,
+			// Find or create subject
+			const subject = await registry.findOrCreateSubject({
+				subjectId,
+				externalSubjectId,
 				ipAddress: ctx.context.ipAddress || 'unknown',
 			});
 
-			if (!user) {
+			if (!subject) {
 				throw new C15TError(
-					'A valid User ID is required to proceed with the consent operation. Please provide a User ID.',
+					'A valid Subject ID is required to proceed with the consent operation. Please provide a Subject ID.',
 					{
 						code: BASE_ERROR_CODES.MISSING_REQUIRED_PARAMETER,
 						status: 400,
@@ -198,12 +198,12 @@ export const setConsent = createAuthEndpoint(
 						.filter(([_, isConsented]) => isConsented)
 						.map(async ([purposeCode]) => {
 							let existingPurpose =
-								await registry.findPurposeByCode(purposeCode);
+								await registry.findConsentPurposeByCode(purposeCode);
 							if (!existingPurpose) {
-								existingPurpose = await registry.createPurpose({
+								existingPurpose = await registry.createConsentPurpose({
 									code: purposeCode,
 									name: purposeCode,
-									description: `Auto-created purpose for ${purposeCode}`,
+									description: `Auto-created consentPurpose for ${purposeCode}`,
 									isActive: true,
 									isEssential: false,
 									dataCategory: 'functional',
@@ -224,7 +224,7 @@ export const setConsent = createAuthEndpoint(
 					const consentRecord = (await tx.create({
 						model: 'consent',
 						data: {
-							userId: user.id,
+							subjectId: subject.id,
 							domainId: domainRecord.id,
 							policyId,
 							purposeIds,
@@ -237,21 +237,21 @@ export const setConsent = createAuthEndpoint(
 
 					// Create record entry
 					const record = (await tx.create({
-						model: 'record',
+						model: 'consentRecord',
 						data: {
-							userId: user.id,
+							subjectId: subject.id,
 							consentId: consentRecord.id,
 							actionType: 'consent_given',
 							details: metadata,
 							createdAt: now,
 						},
-					})) as unknown as inferRecord;
+					})) as unknown as ConsentRecord;
 
 					// Create audit log entry
 					await tx.create({
 						model: 'auditLog',
 						data: {
-							userId: user.id,
+							subjectId: subject.id,
 							entityType: 'consent',
 							entityId: consentRecord.id,
 							actionType: 'consent_given',
@@ -283,8 +283,8 @@ export const setConsent = createAuthEndpoint(
 			// Return response
 			return {
 				id: result.consent.id,
-				userId: user.id,
-				externalUserId: user.externalId ?? undefined,
+				subjectId: subject.id,
+				externalSubjectId: subject.externalId ?? undefined,
 				domainId: domainRecord.id,
 				domain: domainRecord.name,
 				type,

@@ -5,7 +5,7 @@ import { validateEntityOutput } from '../definition';
 import type { Consent } from './schema';
 
 export interface FindConsentsParams {
-	userId?: string;
+	subjectId?: string;
 	domainId?: string;
 	status?: string;
 	purposeIds?: string[];
@@ -40,9 +40,9 @@ export interface RevokeConsentParams {
  *
  * // Create a new consent record
  * const consent = await consentAdapter.createConsent({
- *   userId: 'user-123',
- *   domainId: 'domain-456',
- *   purposeIds: ['purpose-789'],
+ *   subjectId: 'sub_x1pftyoufsm7xgo1kv',
+ *   domainId: 'dom_x1pftyoufsm7xgo1kv',
+ *   purposeIds: ['pur_e8zyhgozr3im7xj59it'],
  *   status: 'active'
  * });
  * ```
@@ -97,10 +97,10 @@ export function consentRegistry({ adapter, ...ctx }: RegistryContext) {
 				});
 			}
 
-			if (params.userId) {
+			if (params.subjectId) {
 				whereConditions.push({
-					field: 'userId',
-					value: params.userId,
+					field: 'subjectId',
+					value: params.subjectId,
 				});
 			}
 
@@ -163,19 +163,19 @@ export function consentRegistry({ adapter, ...ctx }: RegistryContext) {
 		},
 
 		/**
-		 * Finds all consents for a specific user.
+		 * Finds all consents for a specific subject.
 		 * Returns consents with processed output fields according to the schema configuration.
 		 *
-		 * @param userId - The user ID to find consents for
-		 * @returns Array of consents associated with the user
+		 * @param subjectId - The subject ID to find consents for
+		 * @returns Array of consents associated with the subject
 		 */
-		findConsentsByUserId: async (userId: string) => {
+		findConsentsBySubjectId: async (subjectId: string) => {
 			const consents = await adapter.findMany({
 				model: 'consent',
 				where: [
 					{
-						field: 'userId',
-						value: userId,
+						field: 'subjectId',
+						value: subjectId,
 					},
 				],
 				sortBy: {
@@ -252,7 +252,7 @@ export function consentRegistry({ adapter, ...ctx }: RegistryContext) {
 		 * Also records the withdrawal reason if provided.
 		 *
 		 * @param consentId - The unique identifier of the consent to update
-		 * @param withdrawalReason - Optional reason for withdrawal
+		 * @param withdrawalReason - Optional reason for consentWithdrawal
 		 * @param context - Optional endpoint context for hooks
 		 * @returns The updated consent with withdrawn status
 		 */
@@ -309,7 +309,7 @@ export function consentRegistry({ adapter, ...ctx }: RegistryContext) {
 				withdrawalReason: reason,
 				metadata: {
 					...(consent.metadata as Record<string, unknown>),
-					withdrawal: {
+					consentWithdrawal: {
 						actor,
 						timestamp: new Date().toISOString(),
 						...metadata,
@@ -328,7 +328,7 @@ export function consentRegistry({ adapter, ...ctx }: RegistryContext) {
 		 */
 		getRecords: async (consentId: string) => {
 			const records = await adapter.findMany({
-				model: 'record',
+				model: 'consentRecord',
 				where: [
 					{
 						field: 'consentId',
@@ -342,19 +342,19 @@ export function consentRegistry({ adapter, ...ctx }: RegistryContext) {
 			});
 
 			return records.map((record) =>
-				validateEntityOutput('record', record, ctx.options)
+				validateEntityOutput('consentRecord', record, ctx.options)
 			);
 		},
 
 		/**
-		 * Gets all withdrawals associated with a consent.
+		 * Gets all consentWithdrawals associated with a consent.
 		 *
 		 * @param consentId - The ID of the consent
-		 * @returns Array of withdrawals associated with the consent
+		 * @returns Array of consentWithdrawals associated with the consent
 		 */
 		getWithdrawals: async (consentId: string) => {
-			const withdrawals = await adapter.findMany({
-				model: 'withdrawal',
+			const consentWithdrawals = await adapter.findMany({
+				model: 'consentWithdrawal',
 				where: [
 					{
 						field: 'consentId',
@@ -367,8 +367,12 @@ export function consentRegistry({ adapter, ...ctx }: RegistryContext) {
 				},
 			});
 
-			return withdrawals.map((withdrawal) =>
-				validateEntityOutput('withdrawal', withdrawal, ctx.options)
+			return consentWithdrawals.map((consentWithdrawal) =>
+				validateEntityOutput(
+					'consentWithdrawal',
+					consentWithdrawal,
+					ctx.options
+				)
 			);
 		},
 	};

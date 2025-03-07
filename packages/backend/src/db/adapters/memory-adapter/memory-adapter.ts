@@ -23,11 +23,11 @@ import { applyDefaultValue } from '../utils';
  * ```typescript
  * const db: MemoryDB = {
  *   consent: [
- *     { id: '1', userId: 'user123', purposeId: 'marketing', allowed: true },
- *     { id: '2', userId: 'user456', purposeId: 'analytics', allowed: false }
+ *     { id: 'cns_0i1dv2gasuubm7xlm2qj', subjectId: 'sub_x1pftyoufsm7xgo1kv', purposeId: 'pur_e8zyhgozr3im7xj59it', allowed: true },
+ *     { id: 'cns_yxfwrgvn2bhm7xkjcsv', subjectId: 'sub_37lpazdq73qm7xiia1p', purposeId: 'pur_vv76m0rtb2dm7xj59gt', allowed: false }
  *   ],
- *   purpose: [
- *     { id: 'marketing', name: 'Marketing', description: 'For sending promotional materials' }
+ *   consentPurpose: [
+ *     { id: 'pol_1116FRpKFncEvRmVbnJW6JhMxD', name: 'Marketing', description: 'For sending promotional materials' }
  *   ]
  * };
  * ```
@@ -48,21 +48,21 @@ export interface MemoryDB {
  * ```typescript
  * // Simple equality condition
  * const whereCondition: WhereCondition<'consent'> = {
- *   field: 'userId',
- *   value: 'user123'
+ *   field: 'subjectId',
+ *   value: 'sub_x1pftyoufsm7xgo1kv'
  * };
  *
  * // More complex condition with operator
  * const complexCondition: WhereCondition<'consent'> = {
  *   field: 'purposeId',
- *   value: ['marketing', 'analytics'],
+ *   value: ['pur_uvrr67my07m7xj2bta', 'pur_e8zyhgozr3im7xj59it'],
  *   operator: 'in'
  * };
  *
  * // Using OR connector
  * const orCondition: WhereCondition<'consent'> = {
  *   field: 'purposeId',
- *   value: 'marketing',
+ *   value: 'pur_e8zyhgozr3im7xj59it',
  *   connector: 'OR'  // Will match this OR the previous condition
  * };
  * ```
@@ -101,10 +101,10 @@ interface WhereCondition<EntityType extends EntityName> {
 	 *
 	 * @example
 	 * ```typescript
-	 * // Match records where purposeId is 'marketing' OR userId is 'user123'
+	 * // Match records where purposeId is 'pur_e8zyhgozr3im7xj59it' OR subjectId is 'sub_x1pftyoufsm7xgo1kv'
 	 * const where = [
-	 *   { field: 'purposeId', value: 'marketing' },
-	 *   { field: 'userId', value: 'user123', connector: 'OR' }
+	 *   { field: 'purposeId', value: 'pur_e8zyhgozr3im7xj59it' },
+	 *   { field: 'subjectId', value: 'sub_x1pftyoufsm7xgo1kv', connector: 'OR' }
 	 * ];
 	 * ```
 	 */

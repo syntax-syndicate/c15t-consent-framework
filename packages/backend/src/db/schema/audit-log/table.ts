@@ -25,7 +25,7 @@ export function getAuditLogTable(
 	auditLogFields?: Record<string, Field>
 ) {
 	const auditLogConfig = options.tables?.auditLog;
-	const userConfig = options.tables?.user;
+	const subjectConfig = options.tables?.subject;
 
 	return {
 		/**
@@ -49,7 +49,7 @@ export function getAuditLogTable(
 		 */
 		fields: {
 			/**
-			 * Type of entity this audit log entry is about (e.g., 'consent', 'user', 'purpose')
+			 * Type of entity this audit log entry is about (e.g., 'consent', 'subject', 'consentPurpose')
 			 */
 			entityType: {
 				type: 'string',
@@ -77,14 +77,14 @@ export function getAuditLogTable(
 			},
 
 			/**
-			 * Optional ID of the user who performed the action
+			 * Optional ID of the subject who performed the action
 			 */
-			userId: {
+			subjectId: {
 				type: 'string',
 				required: false,
-				fieldName: auditLogConfig?.fields?.userId || 'userId',
+				fieldName: auditLogConfig?.fields?.subjectId || 'subjectId',
 				references: {
-					model: userConfig?.entityName || 'user',
+					model: subjectConfig?.entityName || 'subject',
 					field: 'id',
 				},
 			},
@@ -99,7 +99,7 @@ export function getAuditLogTable(
 			},
 
 			/**
-			 * User agent (browser/device) from which the action was performed
+			 * Subject agent (browser/device) from which the action was performed
 			 */
 			userAgent: {
 				type: 'string',
@@ -167,8 +167,8 @@ export function getAuditLogTable(
 				fields: ['actionType'],
 			},
 			{
-				name: 'user_id_index',
-				fields: ['userId'],
+				name: 'subject_id_index',
+				fields: ['subjectId'],
 			},
 			{
 				name: 'created_at_index',
@@ -178,8 +178,8 @@ export function getAuditLogTable(
 
 		/**
 		 * Execution order during migrations (lower numbers run first)
-		 * Audit log table needs to be created after the user table it references
+		 * Audit log table needs to be created after the subject table it references
 		 */
-		order: 8,
+		order: 5,
 	};
 }

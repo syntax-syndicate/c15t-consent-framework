@@ -16,18 +16,18 @@ const baseVerificationSchema = z.object({
 // At least one identifier must be provided
 const identifierSchema = z
 	.object({
-		userId: z.string().uuid().optional(),
+		subjectId: z.string().optional(),
 		externalId: z.string().optional(),
 		ipAddress: z.string().optional(),
 	})
 	.refine(
 		(data) =>
-			data.userId !== undefined ||
+			data.subjectId !== undefined ||
 			data.externalId !== undefined ||
 			data.ipAddress !== undefined,
 		{
 			message:
-				'At least one identifier (userId, externalId, or ipAddress) must be provided',
+				'At least one identifier (subjectId, externalId, or ipAddress) must be provided',
 		}
 	);
 
@@ -54,11 +54,11 @@ export interface VerifyConsentResponse {
 }
 
 /**
- * Endpoint for verifying if a user has given consent.
+ * Endpoint for verifying if a subject has given consent.
  *
- * This endpoint allows checking if a user has provided consent for a specific domain
+ * This endpoint allows checking if a subject has provided consent for a specific domain
  * and verifies if the consent meets specific criteria (required preferences, policy version).
- * Users can be identified by userId, externalId, or ipAddress.
+ * Subjects can be identified by subjectId, externalId, or ipAddress.
  *
  * @endpoint GET /consent/verify
  */
@@ -98,28 +98,30 @@ export const verifyConsent = createAuthEndpoint(
 				);
 			}
 
-			// Find user based on provided identifiers
-			let userRecord: EntityOutputFields<'user'> | null = null;
+			// Find subject based on provided identifiers
+			let subjectRecord: EntityOutputFields<'subject'> | null = null;
 			let identifierUsed: string | null = null;
 
-			// Try to find user by userId (most precise)
-			if (params.userId) {
-				userRecord = await registry.findUserById(params.userId);
-				if (userRecord) {
-					identifierUsed = 'userId';
+			// Try to find subject by subjectId (most precise)
+			if (params.subjectId) {
+				subjectRecord = await registry.findSubjectById(params.subjectId);
+				if (subjectRecord) {
+					identifierUsed = 'subjectId';
 				}
 			}
 
 			// If not found and externalId provided, try that
-			if (!userRecord && params.externalId) {
-				userRecord = await registry.findUserByExternalId(params.externalId);
-				if (userRecord) {
+			if (!subjectRecord && params.externalId) {
+				subjectRecord = await registry.findSubjectByExternalId(
+					params.externalId
+				);
+				if (subjectRecord) {
 					identifierUsed = 'externalId';
 				}
 			}
 
-			// If no user found, return negative verification
-			if (!userRecord) {
+			// If no subject found, return negative verification
+			if (!subjectRecord) {
 				return {
 					success: true,
 					data: {
@@ -135,13 +137,13 @@ export const verifyConsent = createAuthEndpoint(
 				};
 			}
 
-			// Find active consents for this user
-			const userConsents = await registry.findConsents({
-				userId: userRecord.id,
+			// Find active consents for this subject
+			const subjectConsents = await registry.findConsents({
+				subjectId: subjectRecord.id,
 			});
 
 			// Filter for active consents that match the domain
-			const activeConsents = userConsents.filter(
+			const activeConsents = subjectConsents.filter(
 				(consent) =>
 					consent.status === 'active' && consent.domainId === params.domain
 			);

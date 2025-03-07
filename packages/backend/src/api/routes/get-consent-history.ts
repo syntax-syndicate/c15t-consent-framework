@@ -6,16 +6,16 @@ import { createAuthEndpoint } from '../call';
 
 // Define the schema for validating request parameters
 const getConsentHistorySchema = z.object({
-	userId: z.string(),
+	subjectId: z.string(),
 	domain: z.string().optional(),
 	limit: z.coerce.number().int().positive().max(1000).default(100),
 	offset: z.coerce.number().int().min(0).default(0),
 });
 
 /**
- * Endpoint for retrieving a user's complete consent history.
+ * Endpoint for retrieving a subject's complete consent history.
  *
- * This endpoint returns comprehensive information about a user's consent records,
+ * This endpoint returns comprehensive information about a subject's consent records,
  * including all consent entries, withdrawals, related evidence records, and audit logs.
  * It supports optional domain filtering and pagination to manage large result sets.
  *
@@ -39,25 +39,27 @@ export const getConsentHistory = createAuthEndpoint(
 				});
 			}
 
-			let userConsents = await registry.findConsents({ userId: params.userId });
+			let subjectConsents = await registry.findConsents({
+				subjectId: params.subjectId,
+			});
 			if (params.domain) {
-				userConsents = userConsents.filter(
+				subjectConsents = subjectConsents.filter(
 					(consent) => consent.domainId === params.domain
 				);
 			}
 
 			// Sort consents by givenAt date
-			userConsents.sort((a, b) => b.givenAt.getTime() - a.givenAt.getTime());
+			subjectConsents.sort((a, b) => b.givenAt.getTime() - a.givenAt.getTime());
 
 			// Apply pagination
 			const start = params.offset;
 			const end = start + params.limit;
-			const paginatedConsents = userConsents.slice(start, end);
+			const paginatedConsents = subjectConsents.slice(start, end);
 
 			// Process each consent to include withdrawals and records
 			const processedConsents = await Promise.all(
 				paginatedConsents.map(async (consent) => {
-					const withdrawals = await registry.getWithdrawals(consent.id);
+					const consentWithdrawals = await registry.getWithdrawals(consent.id);
 					const records = await registry.getRecords(consent.id);
 
 					return {
@@ -65,22 +67,24 @@ export const getConsentHistory = createAuthEndpoint(
 						domainId: consent.domainId,
 						status: consent.status as string,
 						givenAt: consent.givenAt.toISOString(),
-						withdrawals: withdrawals.map((withdrawal) => ({
-							id: withdrawal.id,
-							createdAt: withdrawal.createdAt.toISOString(),
-							reason: withdrawal.withdrawalReason,
-							method: withdrawal.withdrawalMethod,
+						consentWithdrawals: consentWithdrawals.map((consentWithdrawal) => ({
+							id: consentWithdrawal.id,
+							createdAt: consentWithdrawal.createdAt.toISOString(),
+							reason: consentWithdrawal.withdrawalReason,
+							method: consentWithdrawal.withdrawalMethod,
 							actor:
-								(withdrawal.metadata as Record<string, unknown>)?.actor ||
-								'system',
-							metadata: withdrawal.metadata,
+								(consentWithdrawal.metadata as Record<string, unknown>)
+									?.actor || 'system',
+							metadata: consentWithdrawal.metadata,
 						})),
-						records: records.map((record: EntityOutputFields<'record'>) => ({
-							id: record.id,
-							createdAt: record.createdAt.toISOString(),
-							type: record.actionType,
-							details: record.id,
-						})),
+						consentRecords: records.map(
+							(record: EntityOutputFields<'consentRecord'>) => ({
+								id: record.id,
+								createdAt: record.createdAt.toISOString(),
+								type: record.actionType,
+								details: record.id,
+							})
+						),
 					};
 				})
 			);
@@ -93,7 +97,7 @@ export const getConsentHistory = createAuthEndpoint(
 				details: Record<string, unknown>;
 			}> = [];
 			if ('findAuditLogs' in registry) {
-				const logs = await registry.findAuditLogs(params.userId);
+				const logs = await registry.findAuditLogs(params.subjectId);
 				auditLogs = logs.map((log: EntityOutputFields<'auditLog'>) => ({
 					id: log.id,
 					createdAt: log.createdAt.toISOString(),
@@ -108,7 +112,7 @@ export const getConsentHistory = createAuthEndpoint(
 					consents: processedConsents,
 					auditLogs,
 					pagination: {
-						total: userConsents.length,
+						total: subjectConsents.length,
 						offset: params.offset,
 						limit: params.limit,
 					},

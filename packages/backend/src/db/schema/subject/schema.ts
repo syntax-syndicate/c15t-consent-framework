@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 /**
- * Zod schema for validating user entities.
+ * Zod schema for validating subject entities.
  *
- * This defines the structure and validation rules for user records:
+ * This defines the structure and validation rules for subject records:
  * - Requires a valid UUID for the ID field
  * - Default value of false for isIdentified
  * - Optional fields for externalId, identityProvider, and lastIpAddress
@@ -11,17 +11,17 @@ import { z } from 'zod';
  *
  * @example
  * ```typescript
- * const userData = {
- *   id: '123e4567-e89b-12d3-a456-426614174000',
+ * const subjectData = {
+ *   id: 'sub_x1pftyoufsm7xgo1kv',
  *   externalId: 'ext-123',
  *   isIdentified: true
  * };
  *
- * // Validate and parse the user data
- * const validUser = userSchema.parse(userData);
+ * // Validate and parse the subject data
+ * const validSubject = subjectSchema.parse(subjectData);
  * ```
  */
-export const userSchema = z.object({
+export const subjectSchema = z.object({
 	id: z.string(),
 	isIdentified: z.boolean().default(false),
 	externalId: z.string().nullable().optional(),
@@ -32,10 +32,10 @@ export const userSchema = z.object({
 });
 
 /**
- * Type definition for User
+ * Type definition for Subject
  *
- * This type represents the structure of a user record
- * as defined by the userSchema. It includes all fields
- * that are part of the user entity.
+ * This type represents the structure of a subject record
+ * as defined by the subjectSchema. It includes all fields
+ * that are part of the subject entity.
  */
-export type User = z.infer<typeof userSchema>;
+export type Subject = z.infer<typeof subjectSchema>;

@@ -15,10 +15,10 @@ const withdrawByConsentIdSchema = z.object({
 	metadata: z.record(z.any()).optional(),
 });
 
-const withdrawByUserIdSchema = z.object({
-	userId: z.string(),
+const withdrawBySubjectIdSchema = z.object({
+	subjectId: z.string(),
 	domain: z.string(),
-	identifierType: z.literal('userId'),
+	identifierType: z.literal('subjectId'),
 	reason: z.string().optional(),
 	method: z.string().min(1).max(50),
 	actor: z.string().optional(),
@@ -38,7 +38,7 @@ const withdrawByExternalIdSchema = z.object({
 // Combined schema using discriminated union
 const withdrawConsentSchema = z.discriminatedUnion('identifierType', [
 	withdrawByConsentIdSchema,
-	withdrawByUserIdSchema,
+	withdrawBySubjectIdSchema,
 	withdrawByExternalIdSchema,
 ]);
 
@@ -54,10 +54,10 @@ export interface WithdrawConsentResponse {
 /**
  * Endpoint for withdrawing previously given consent.
  *
- * This endpoint allows clients to revoke a user's consent by specifying either:
+ * This endpoint allows clients to revoke a subject's consent by specifying either:
  * 1. The specific consent ID to withdraw
- * 2. The user ID and domain to withdraw all active consents for that user on that domain
- * 3. The external user ID and domain to withdraw all active consents for that user on that domain
+ * 2. The subject ID and domain to withdraw all active consents for that subject on that domain
+ * 3. The external subject ID and domain to withdraw all active consents for that subject on that domain
  *
  * @endpoint POST /consent/withdraw
  */
@@ -129,52 +129,54 @@ export const withdrawConsent = createAuthEndpoint(
 
 				recordsToWithdraw = [record];
 			} else if (
-				params.identifierType === 'userId' ||
+				params.identifierType === 'subjectId' ||
 				params.identifierType === 'externalId'
 			) {
-				// Find user
-				let userRecord: EntityOutputFields<'user'> | null = null;
-				if (params.identifierType === 'userId') {
-					userRecord = await registry.findUserById(params.userId);
+				// Find subject
+				let subjectRecord: EntityOutputFields<'subject'> | null = null;
+				if (params.identifierType === 'subjectId') {
+					subjectRecord = await registry.findSubjectById(params.subjectId);
 				} else {
-					userRecord = await registry.findUserByExternalId(params.externalId);
+					subjectRecord = await registry.findSubjectByExternalId(
+						params.externalId
+					);
 				}
 
-				if (!userRecord) {
+				if (!subjectRecord) {
 					throw new C15TError(
-						'The specified user could not be found. Please verify the user ID or external ID and try again.',
+						'The specified subject could not be found. Please verify the subject ID or external ID and try again.',
 						{
 							code: BASE_ERROR_CODES.NOT_FOUND,
 							status: 404,
 							data:
-								params.identifierType === 'userId'
-									? { userId: params.userId }
+								params.identifierType === 'subjectId'
+									? { subjectId: params.subjectId }
 									: { externalId: params.externalId },
 						}
 					);
 				}
 
-				// Find all active consents for this user and domain
-				const userConsents = await registry.findConsents({
-					userId: userRecord.id,
+				// Find all active consents for this subject and domain
+				const subjectConsents = await registry.findConsents({
+					subjectId: subjectRecord.id,
 				});
 
 				// Filter for active consents with matching domain
-				recordsToWithdraw = userConsents.filter(
+				recordsToWithdraw = subjectConsents.filter(
 					(consent) =>
 						consent.status === 'active' && consent.domainId === params.domain
 				);
 
 				if (recordsToWithdraw.length === 0) {
 					throw new C15TError(
-						'No active consent records were found for this user and domain. Please ensure the user and domain are correct.',
+						'No active consent records were found for this subject and domain. Please ensure the subject and domain are correct.',
 						{
 							code: BASE_ERROR_CODES.CONSENT_NOT_FOUND,
 							status: 404,
 							data: {
 								domain: params.domain,
-								...(params.identifierType === 'userId'
-									? { userId: params.userId }
+								...(params.identifierType === 'subjectId'
+									? { subjectId: params.subjectId }
 									: { externalId: params.externalId }),
 							},
 						}
@@ -208,9 +210,9 @@ export const withdrawConsent = createAuthEndpoint(
 					metadata: params.metadata || {},
 				});
 
-				// Add consent record for the withdrawal
-				await registry.createRecord({
-					userId: record.userId,
+				// Add consent record for the consentWithdrawal
+				await registry.createConsentRecord({
+					subjectId: record.subjectId,
 					consentId: record.id,
 					actionType: 'withdraw_consent',
 					details: {
@@ -225,7 +227,7 @@ export const withdrawConsent = createAuthEndpoint(
 
 				// Log the action in the audit log
 				await registry.createAuditLog({
-					userId: record.userId,
+					subjectId: record.subjectId,
 					entityType: 'consent',
 					entityId: record.id,
 					actionType: 'withdraw_consent',
@@ -242,13 +244,13 @@ export const withdrawConsent = createAuthEndpoint(
 				});
 
 				withdrawalResults.push({
-					id: withdrawalResult?.id || `withdrawal-${record.id}`,
+					id: withdrawalResult?.id || `wdr_${record.id}`,
 					consentId: record.id,
 					revokedAt: currentTime.toISOString(),
 				});
 			}
 
-			// Return success response with withdrawal details
+			// Return success response with consentWithdrawal details
 			return {
 				success: true,
 				data: {

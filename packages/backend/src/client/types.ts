@@ -117,9 +117,9 @@ export interface c15tClientOptions {
  * @example
  * ```typescript
  * // Basic GET request options
- * const getOptions: FetchOptions<UserConsent> = {
+ * const getOptions: FetchOptions<SubjectConsent> = {
  *   method: 'GET',
- *   query: { userId: '123' }
+ *   query: { subjectId: 'sub_x1pftyoufsm7xgo1kv' }
  * };
  *
  * // POST request with error handling
@@ -169,8 +169,8 @@ export interface FetchOptions<ResponseType = unknown> {
 	 * ```typescript
 	 * const options = {
 	 *   query: {
-	 *     userId: '123',
-	 *     purposes: ['analytics', 'marketing'], // Results in ?purposes=analytics&purposes=marketing
+	 *     subjectId: 'sub_x1pftyoufsm7xgo1kv',
+	 *     purposes: ['pur_uvrr67my07m7xj2bta', 'pur_vv76m0rtb2dm7xj59gt'], // Results in ?purposes=analytics&purposes=marketing
 	 *     includeHistory: true
 	 *   }
 	 * };
@@ -290,18 +290,18 @@ export interface FetchOptions<ResponseType = unknown> {
  * @example
  * ```typescript
  * // Processing a response context
- * const response: ResponseContext<UserData> = await client.$fetch('/user/123');
+ * const response: ResponseContext<SubjectData> = await client.$fetch('/subject/123');
  *
  * if (response.ok) {
  *   // Handle successful response
- *   console.log('User data:', response.data);
+ *   console.log('Subject data:', response.data);
  *   // Access headers if needed
  *   const etag = response.response?.headers.get('ETag');
  * } else {
  *   // Handle error response
  *   console.error(`Error ${response.error?.status}: ${response.error?.message}`);
  *   if (response.error?.status === 404) {
- *     console.log('User not found');
+ *     console.log('Subject not found');
  *   }
  * }
  * ```

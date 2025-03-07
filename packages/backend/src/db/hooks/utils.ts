@@ -24,7 +24,7 @@ import type { DatabaseHook, HookOperation, HookPhase } from './types';
  * ```typescript
  * const processedData = await processHooks(
  *   { name: 'Alice' },
- *   'user',
+ *   'subject',
  *   'create',
  *   'before',
  *   registeredHooks
@@ -116,12 +116,12 @@ export async function processHooks<
  *
  * @example
  * ```typescript
- * // Process 'after update' hooks for multiple users
+ * // Process 'after update' hooks for multiple subjects
  * await processAfterHooksForMany(
- *   updatedUsers,
- *   'user',
+ *   updatedSubjects,
+ *   'subject',
  *   registeredHooks,
- *   { batchId: 'batch-123' }
+ *   { batchId: 'sub_x1pftyoufsm7xgo1kv' }
  * );
  * ```
  */

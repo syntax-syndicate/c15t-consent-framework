@@ -21,8 +21,8 @@ import type { EntityTypeMap } from '~/db/core/types';
  * // type safety for database operations
  * const query = db
  *   .selectFrom('consent')  // Type-safe table name
- *   .select(['id', 'userId', 'purposeId']) // Type-safe column names
- *   .where('userId', '=', userId)
+ *   .select(['id', 'subjectId', 'purposeId']) // Type-safe column names
+ *   .where('subjectId', '=', subjectId)
  *   .executeTakeFirst();
  * ```
  */
@@ -183,8 +183,8 @@ export interface DialectConfig {
 	 * Casing style for table names in the database
 	 *
 	 * This affects how table names are transformed when interacting with the database.
-	 * For example, with 'camel' casing, 'userProfile' becomes 'user_profile' in the database.
-	 * With 'snake' casing, it remains as 'user_profile'.
+	 * For example, with 'camel' casing, 'subjectProfile' becomes 'subject_profile' in the database.
+	 * With 'snake' casing, it remains as 'subject_profile'.
 	 *
 	 * @default "camel"
 	 */
@@ -257,8 +257,8 @@ export interface KyselyInstanceConfig {
 	 * Casing style for table names in the database
 	 *
 	 * This affects how table names are transformed when interacting with the database.
-	 * For example, with 'camel' casing, 'userProfile' becomes 'user_profile' in the database.
-	 * With 'snake' casing, it remains as 'user_profile'.
+	 * For example, with 'camel' casing, 'subjectProfile' becomes 'subject_profile' in the database.
+	 * With 'snake' casing, it remains as 'subject_profile'.
 	 *
 	 * @default "camel"
 	 */

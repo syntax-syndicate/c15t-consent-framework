@@ -25,10 +25,10 @@ export function getConsentTable(
 ) {
 	// Get consent config from the tables structure
 	const consentConfig = options.tables?.consent;
-	const userConfig = options.tables?.user;
+	const subjectConfig = options.tables?.subject;
 	const domainConfig = options.tables?.domain;
 	const policyConfig = options.tables?.consentPolicy;
-	const purposeConfig = options.tables?.purpose;
+	const purposeConfig = options.tables?.consentPurpose;
 
 	return {
 		/**
@@ -52,14 +52,14 @@ export function getConsentTable(
 		 */
 		fields: {
 			/**
-			 * Reference to the user who gave consent
+			 * Reference to the subject who gave consent
 			 */
-			userId: {
+			subjectId: {
 				type: 'string',
 				required: true,
-				fieldName: consentConfig?.fields?.userId || 'userId',
+				fieldName: consentConfig?.fields?.subjectId || 'subjectId',
 				references: {
-					model: userConfig?.entityName || 'user',
+					model: subjectConfig?.entityName || 'subject',
 					field: 'id',
 				},
 			},
@@ -78,7 +78,7 @@ export function getConsentTable(
 			},
 
 			/**
-			 * Array of purpose IDs that this consent applies to
+			 * Array of consentPurpose IDs that this consent applies to
 			 * Represents the many-to-many relationship between consent and purposes
 			 */
 			purposeIds: {
@@ -86,7 +86,7 @@ export function getConsentTable(
 				required: false,
 				fieldName: consentConfig?.fields?.purposeIds || 'purposeIds',
 				references: {
-					model: purposeConfig?.entityName || 'purpose',
+					model: purposeConfig?.entityName || 'consentPurpose',
 					field: 'id',
 					type: 'array', // Indicates this is an array of references
 				},
@@ -124,7 +124,7 @@ export function getConsentTable(
 			},
 
 			/**
-			 * User agent information when consent was given
+			 * Subject agent information when consent was given
 			 */
 			userAgent: {
 				type: 'string',
@@ -144,7 +144,7 @@ export function getConsentTable(
 			},
 
 			/**
-			 * Reason for withdrawal, if consent was withdrawn
+			 * Reason for consentWithdrawal, if consent was withdrawn
 			 */
 			withdrawalReason: {
 				type: 'string',
@@ -213,8 +213,8 @@ export function getConsentTable(
 
 		/**
 		 * Execution order during migrations (lower numbers run first)
-		 * Consent table needs to be created after the user, domain, and policy tables it references
+		 * Consent table needs to be created after the subject, domain, and policy tables it references
 		 */
-		order: 4,
+		order: 3,
 	};
 }

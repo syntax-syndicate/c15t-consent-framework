@@ -21,13 +21,13 @@ import { processHooks } from './utils';
  *
  * @example
  * ```typescript
- * const updatedUser = await updateWithHooks(
+ * const updatedSubject = await updateWithHooks(
  *   mysqlAdapter,
- *   { hooks: userHooks, options: config },
+ *   { hooks: subjectHooks, options: config },
  *   {
  *     data: { status: 'active' },
- *     where: { id: 'user-123' },
- *     model: 'user'
+ *     where: { id: 'sub_x1pftyoufsm7xgo1kv' },
+ *     model: 'subject'
  *   }
  * );
  * ```

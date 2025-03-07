@@ -4,7 +4,7 @@ import { z } from 'zod';
  * Zod schema for validating consent entities.
  *
  * This defines the structure and validation rules for consent records:
- * - Required fields: userId, domainId, purposeIds
+ * - Required fields: subjectId, domainId, purposeIds
  * - Default value of 'active' for status
  * - Default current date/time for creation timestamp
  * - Includes audit trail of all changes
@@ -12,10 +12,10 @@ import { z } from 'zod';
  * @example
  * ```typescript
  * const consentData = {
- *   id: '123e4567-e89b-12d3-a456-426614174000',
- *   userId: 'user-123',
- *   domainId: 'domain-456',
- *   purposeIds: ['purpose-789'],
+ *   id: 'cns_w5qufx2a66m7xkn3ty',
+ *   subjectId: 'sub_x1pftyoufsm7xgo1kv',
+ *   domainId: 'dom_x1pftyoufsm7xgo1kv',
+ *   purposeIds: ['pur_e8zyhgozr3im7xj59it'],
  *   status: 'active',
  *   givenAt: new Date(),
  *   isActive: true,
@@ -39,7 +39,7 @@ export const consentHistorySchema = z.object({
 
 export const consentSchema = z.object({
 	id: z.string(),
-	userId: z.string(),
+	subjectId: z.string(),
 	domainId: z.string(),
 	purposeIds: z.array(z.string()),
 	metadata: z.record(z.unknown()).optional(),

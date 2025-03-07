@@ -1,4 +1,4 @@
-import type { Purpose } from '~/db/schema/purpose';
+import type { ConsentPurpose } from '~/db/schema/consent-purpose';
 import type { FetchOptions, ResponseContext, c15tClientOptions } from './types';
 
 /**
@@ -221,7 +221,7 @@ export class c15tClient {
 	// /**
 	//  * Retrieves the current consent preferences.
 	//  *
-	//  * This method fetches the current consent settings for the user,
+	//  * This method fetches the current consent settings for the subject,
 	//  * including which purposes they have consented to and when the
 	//  * consent was last updated.
 	//  *
@@ -230,7 +230,7 @@ export class c15tClient {
 	//  * const { data, error } = await client.getConsent();
 	//  *
 	//  * if (data) {
-	//  *   console.log('User consented to analytics:', data.preferences.analytics);
+	//  *   console.log('Subject consented to analytics:', data.preferences.analytics);
 	//  *   console.log('Consent last updated:', data.updatedAt);
 	//  * }
 	//  * ```
@@ -266,10 +266,10 @@ export class c15tClient {
 	 * }
 	 *
 	 * if (data) {
-	 *   // Display available consent purposes to the user
-	 *   data.forEach(purpose => {
-	 *     console.log(`${purpose.name}: ${purpose.description}`);
-	 *     console.log(`Required: ${purpose.required}`);
+	 *   // Display available consent purposes to the subject
+	 *   data.forEach(consentPurpose => {
+	 *     console.log(`${consentPurpose.name}: ${consentPurpose.description}`);
+	 *     console.log(`Required: ${consentPurpose.required}`);
 	 *   });
 	 * }
 	 * ```
@@ -278,18 +278,18 @@ export class c15tClient {
 	 * @returns Response context containing the list of consent purposes if successful
 	 */
 	async listPurposes(
-		options?: FetchOptions<Purpose[]>
-	): Promise<ResponseContext<Purpose[]>> {
-		return this.fetcher<Purpose[]>('/list-purposes', {
+		options?: FetchOptions<ConsentPurpose[]>
+	): Promise<ResponseContext<ConsentPurpose[]>> {
+		return this.fetcher<ConsentPurpose[]>('/list-purposes', {
 			method: 'GET',
 			...options,
 		});
 	}
 
 	// /**
-	//  * Updates the user's consent preferences.
+	//  * Updates the subject's consent preferences.
 	//  *
-	//  * This method sends the user's updated consent choices to the server,
+	//  * This method sends the subject's updated consent choices to the server,
 	//  * recording which purposes they have agreed to and which they have declined.
 	//  *
 	//  * @example
@@ -306,7 +306,7 @@ export class c15tClient {
 	//  * }
 	//  * ```
 	//  *
-	//  * @param preferences - Record mapping purpose IDs to boolean consent values
+	//  * @param preferences - Record mapping consentPurpose IDs to boolean consent values
 	//  * @param options - Optional fetch configuration options
 	//  * @returns Response context containing the updated consent preferences if successful
 	//  */
@@ -329,9 +329,9 @@ export class c15tClient {
 	//  *
 	//  * @example
 	//  * ```typescript
-	//  * // Get consent history for a specific user
+	//  * // Get consent history for a specific subject
 	//  * const { data } = await client.getConsentHistory({
-	//  *   userId: '123',
+	//  *   subjectId: 'sub_x1pftyoufsm7xgo1kv',
 	//  *   limit: 10
 	//  * });
 	//  *
@@ -350,7 +350,7 @@ export class c15tClient {
 	// async getConsentHistory(
 	// 	query?: {
 	// 		recordId?: string;
-	// 		userId?: string;
+	// 		subjectId?: string;
 	// 		deviceId?: string;
 	// 		limit?: number;
 	// 		offset?: number;
@@ -429,7 +429,7 @@ export class c15tClient {
  *   baseURL: 'https://api.example.com/consent',
  *   headers: {
  *     'X-API-Key': process.env.API_KEY,
- *     'User-Agent': 'MyConsentApp/1.0'
+ *     'user-agent': 'MyConsentApp/1.0'
  *   },
  *   fetchOptions: {
  *     // Optional custom fetch implementation
@@ -447,7 +447,7 @@ export class c15tClient {
  *     return;
  *   }
  *
- *   // Display purposes to user and collect their choices
+ *   // Display purposes to subject and collect their choices
  *   // ...
  *
  *   // Then update their consent

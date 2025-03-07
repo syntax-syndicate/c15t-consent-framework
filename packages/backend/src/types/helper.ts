@@ -31,14 +31,14 @@ export type LiteralString = '' | (string & Record<never, never>);
  *
  * @example
  * ```ts
- * interface User {
+ * interface Subject {
  *   id: number;
  *   name: string;
  *   email?: string;
  * }
  *
- * // RequiredKeysOf<User> will be 'id' | 'name'
- * type RequiredUserFields = RequiredKeysOf<User>;
+ * // RequiredKeysOf<Subject> will be 'id' | 'name'
+ * type RequiredsubjectFields = RequiredKeysOf<Subject>;
  * ```
  */
 export type RequiredKeysOf<BaseType extends object> = Exclude<
@@ -57,27 +57,6 @@ export type RequiredKeysOf<BaseType extends object> = Exclude<
  * properties optional as well. Functions are preserved as-is.
  *
  * @typeParam T - The type to make deeply partial
- *
- * @example
- * ```ts
- * interface User {
- *   id: number;
- *   name: string;
- *   settings: {
- *     theme: string;
- *     notifications: boolean;
- *   }
- * }
- *
- * // All properties including nested ones are optional
- * const partialUser: DeepPartial<User> = {
- *   name: 'John',
- *   settings: {
- *     theme: 'dark'
- *     // notifications can be omitted
- *   }
- * };
- * ```
  */
 export type DeepPartial<T> = T extends (...args: unknown[]) => unknown
 	? T

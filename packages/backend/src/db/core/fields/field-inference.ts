@@ -73,14 +73,6 @@ export type InferFieldOutput<TField extends Field> =
  *
  * @example
  * ```typescript
- * // A required input field
- * const emailField: Field<'string'> = {
- *   type: 'string',
- *   required: true,
- *   input: true
- * };
- * type EmailInput = InferFieldInput<typeof emailField>;  // string
- *
  * // A non-input field (system-generated)
  * const createdAtField: Field<'date'> = {
  *   type: 'date',
@@ -173,7 +165,7 @@ type OptionalKeys<TSchema> = {
 
 /**
  * Type helper to extract required keys from fields that accept input.
- * Identifies fields that are both required and accept user input.
+ * Identifies fields that are both required and accept subject input.
  *
  * @template TSchema - The record type containing field definitions
  *
@@ -192,7 +184,7 @@ type RequiredInputKeys<TSchema> = {
 
 /**
  * Type helper to extract optional keys from fields that accept input.
- * Identifies fields that are optional and accept user input.
+ * Identifies fields that are optional and accept subject input.
  *
  * @template TSchema - The record type containing field definitions
  *
@@ -219,7 +211,7 @@ type OptionalInputKeys<TSchema> = {
  * @example
  * ```typescript
  * // Define a schema
- * const userSchema = {
+ * const subjectSchema = {
  *   id: stringField({ required: true }),
  *   name: stringField({ required: true }),
  *   email: stringField({ required: true }),
@@ -228,7 +220,7 @@ type OptionalInputKeys<TSchema> = {
  * };
  *
  * // Infer the output type (for API responses)
- * type UserOutput = InferFieldsOutput<typeof userSchema>;
+ * type SubjectOutput = InferFieldsOutput<typeof subjectSchema>;
  * // Result: { id: string; name: string; email: string; age?: number | null | undefined }
  * // Note: 'password' is excluded because returned: false
  * ```
@@ -257,7 +249,7 @@ export type InferFieldsOutput<TSchema> = TSchema extends Record<string, Field>
  * @example
  * ```typescript
  * // Define a schema
- * const userSchema = {
+ * const subjectSchema = {
  *   id: stringField({ required: true, input: false }), // Auto-generated
  *   name: stringField({ required: true }),
  *   email: stringField({ required: true }),
@@ -266,7 +258,7 @@ export type InferFieldsOutput<TSchema> = TSchema extends Record<string, Field>
  * };
  *
  * // Infer the input type (for create operations)
- * type UserInput = InferFieldsInput<typeof userSchema>;
+ * type SubjectInput = InferFieldsInput<typeof subjectSchema>;
  * // Result: { name: string; email: string; age?: number | null | undefined }
  * // Note: 'id' and 'createdAt' are excluded because input: false
  * ```

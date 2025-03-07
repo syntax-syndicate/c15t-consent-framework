@@ -4,15 +4,15 @@ import {
 	getAuditLogTable,
 	getConsentGeoLocationTable,
 	getConsentPolicyTable,
+	// getGeoLocationTable,
+	getConsentRecordTable,
 	getConsentTable,
+	getConsentWithdrawalTable,
 	getDomainTable,
 	getGeoLocationTable,
 	getPurposeJunctionTable,
 	getPurposeTable,
-	// getGeoLocationTable,
-	getRecordTable,
-	getUserTable,
-	getWithdrawalTable,
+	getSubjectTable,
 } from './index';
 import type { InferTableShape } from './schemas';
 
@@ -60,33 +60,39 @@ export const getConsentTables = (options: C15TOptions) => {
 	}, {} as PluginSchema);
 
 	const {
-		user,
-		purpose,
+		subject,
+		consentPurpose,
 		consentPolicy,
 		domain,
 		geoLocation,
 		consent,
-		purposeJunction,
+		consentPurposeJunction,
 		record,
 		consentGeoLocation,
-		withdrawal,
+		consentWithdrawal,
 		auditLog,
 		...pluginTables
 	} = pluginSchema || {};
 
 	return {
-		user: getUserTable(options, user?.fields),
-		purpose: getPurposeTable(options, purpose?.fields),
+		subject: getSubjectTable(options, subject?.fields),
+		consentPurpose: getPurposeTable(options, consentPurpose?.fields),
 		consentPolicy: getConsentPolicyTable(options, consentPolicy?.fields),
 		domain: getDomainTable(options, domain?.fields),
 		consent: getConsentTable(options, consent?.fields),
-		purposeJunction: getPurposeJunctionTable(options, purposeJunction?.fields),
-		record: getRecordTable(options, record?.fields),
+		consentPurposeJunction: getPurposeJunctionTable(
+			options,
+			consentPurposeJunction?.fields
+		),
+		consentRecord: getConsentRecordTable(options, record?.fields),
 		consentGeoLocation: getConsentGeoLocationTable(
 			options,
 			consentGeoLocation?.fields
 		),
-		withdrawal: getWithdrawalTable(options, withdrawal?.fields),
+		consentWithdrawal: getConsentWithdrawalTable(
+			options,
+			consentWithdrawal?.fields
+		),
 		auditLog: getAuditLogTable(options, auditLog?.fields),
 		geoLocation: getGeoLocationTable(options, geoLocation?.fields),
 		...pluginTables,
@@ -160,14 +166,14 @@ export type EntityInputFields<TableName extends keyof C15TDBSchema> = Omit<
  * ```typescript
  * // Validate data retrieved from an external API
  * try {
- *   const validUserOutput = validateEntityOutput(
- *     'user',
- *     fetchedUserData,
+ *   const validSubjectOutput = validateEntityOutput(
+ *     'subject',
+ *     fetchedSubjectData,
  *     options
  *   );
  *
- *   // validUserOutput is now typed as EntityOutputFields<'user'>
- *   displayUserProfile(validUserOutput);
+ *   // validSubjectOutput is now typed as EntityOutputFields<'subject'>
+ *   displaySubjectProfile(validSubjectOutput);
  * } catch (error) {
  *   console.error('Output validation failed:', error.message);
  * }

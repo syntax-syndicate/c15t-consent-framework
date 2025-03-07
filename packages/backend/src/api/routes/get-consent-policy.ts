@@ -12,14 +12,14 @@ const baseParamsSchema = z.object({
 });
 
 // Define schemas for the different identification methods (all optional)
-const userIdentifierSchema = z.object({
-	userId: z.string().uuid().optional(),
+const subjectIdentifierSchema = z.object({
+	subjectId: z.string().optional(),
 	externalId: z.string().optional(),
 	ipAddress: z.string().optional(),
 });
 
 // Combine the schemas
-const getPolicySchema = baseParamsSchema.merge(userIdentifierSchema);
+const getPolicySchema = baseParamsSchema.merge(subjectIdentifierSchema);
 
 export interface GetPolicyResponse {
 	success: boolean;
@@ -32,7 +32,7 @@ export interface GetPolicyResponse {
 			availablePreferences?: Record<string, unknown>;
 			createdAt: string;
 		};
-		userConsentStatus?: {
+		subjectConsentStatus?: {
 			hasConsent: boolean;
 			currentPreferences: Record<string, string | null> | null;
 			consentedAt: string | null;
@@ -47,7 +47,7 @@ export interface GetPolicyResponse {
  *
  * This endpoint allows clients to retrieve the consent policy for a domain.
  * It supports retrieving the latest policy or a specific version.
- * It can also return personalized policy information if user identifiers are provided.
+ * It can also return personalized policy information if subject identifiers are provided.
  *
  * @endpoint GET /consent/policy
  * @requestExample
@@ -64,8 +64,8 @@ export interface GetPolicyResponse {
  *
  * @requestExample
  * ```
- * // With user context
- * GET /api/consent/policy?domain=example.com&userId=550e8400-e29b-41d4-a716-446655440000
+ * // With subject context
+ * GET /api/consent/policy?domain=example.com&subjectId=550e8400-e29b-41d4-a716-446655440000
  * ```
  *
  * @responseExample
@@ -96,7 +96,7 @@ export interface GetPolicyResponse {
  *       },
  *       "createdAt": "2023-04-01T12:34:56.789Z"
  *     },
- *     "userConsentStatus": {
+ *     "subjectConsentStatus": {
  *       "hasConsent": true,
  *       "currentPreferences": {
  *         "marketing": null,
@@ -113,7 +113,7 @@ export interface GetPolicyResponse {
  * @returns {boolean} success - Whether the request was successful
  * @returns {Object} data - The policy data
  * @returns {Object} data.policy - The consent policy information
- * @returns {Object} [data.userConsentStatus] - User's consent status if user identifiers were provided
+ * @returns {Object} [data.subjectConsentStatus] - Subject's consent status if subject identifiers were provided
  *
  * @throws {C15TError} BAD_REQUEST - When request parameters are invalid
  * @throws {C15TError} NOT_FOUND - When the domain or policy version doesn't exist
@@ -240,49 +240,54 @@ export const getConsentPolicy = createAuthEndpoint(
 				},
 			};
 
-			// If user identifiers were provided, try to find the user's consent status
-			if (params.userId || params.externalId || params.ipAddress) {
-				let userRecord: EntityOutputFields<'user'> | null = null;
+			// If subject identifiers were provided, try to find the subject's consent status
+			if (params.subjectId || params.externalId || params.ipAddress) {
+				let subjectRecord: EntityOutputFields<'subject'> | null = null;
 				let identifierUsed: string | null = null;
 
-				// Try to find user by userId
-				if (params.userId) {
-					userRecord = await registry.findUserById(params.userId);
-					if (userRecord) {
-						identifierUsed = 'userId';
+				// Try to find subject by subjectId
+				if (params.subjectId) {
+					subjectRecord = await registry.findSubjectById(params.subjectId);
+					if (subjectRecord) {
+						identifierUsed = 'subjectId';
 					}
 				}
 
 				// If not found and externalId provided, try that
-				if (!userRecord && params.externalId) {
-					userRecord = await registry.findUserByExternalId(params.externalId);
-					if (userRecord) {
+				if (!subjectRecord && params.externalId) {
+					subjectRecord = await registry.findSubjectByExternalId(
+						params.externalId
+					);
+					if (subjectRecord) {
 						identifierUsed = 'externalId';
 					}
 				}
 
-				// If we found a user, get their consent status
-				if (userRecord) {
-					// Get user's active consents for this domain
-					const userConsents = await registry.findConsents({
-						userId: userRecord.id,
+				// If we found a subject, get their consent status
+				if (subjectRecord) {
+					// Get subject's active consents for this domain
+					const subjectConsents = await registry.findConsents({
+						subjectId: subjectRecord.id,
 						domainId: domain.id,
 						status: 'active',
 					});
 
 					// Get the latest active consent
-					const userConsent = userConsents.length > 0 ? userConsents[0] : null;
+					const subjectConsent =
+						subjectConsents.length > 0 ? subjectConsents[0] : null;
 
-					// Add user consent info to response
-					response.data.userConsentStatus = {
-						hasConsent: !!userConsent,
-						//@ts-expect-error
-						currentPreferences: userConsent ? userConsent.preferences : null,
-						consentedAt: userConsent
-							? userConsent.givenAt.toISOString() || null
+					// Add subject consent info to response
+					response.data.subjectConsentStatus = {
+						hasConsent: !!subjectConsent,
+						currentPreferences: subjectConsent
+							? // @ts-expect-error
+								subjectConsent.preferences
 							: null,
-						needsRenewal: userConsent
-							? userConsent.policyId !== policy.id
+						consentedAt: subjectConsent
+							? subjectConsent.givenAt.toISOString() || null
+							: null,
+						needsRenewal: subjectConsent
+							? subjectConsent.policyId !== policy.id
 							: true,
 						identifiedBy: identifierUsed,
 					};

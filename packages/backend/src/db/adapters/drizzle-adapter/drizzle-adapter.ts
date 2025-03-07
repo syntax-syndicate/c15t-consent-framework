@@ -397,7 +397,7 @@ const createEntityTransformer = (
  * const configWithSchema: DrizzleAdapterConfig = {
  *   provider: 'mysql',
  *   schema: {
- *     users: users, // Drizzle schema objects
+ *     subjects: subjects, // Drizzle schema objects
  *     consents: consents,
  *     purposes: purposes
  *   }
@@ -424,7 +424,7 @@ export interface DrizzleAdapterConfig {
 	/**
 	 * If the table names in the schema are plural
 	 * set this to true. For example, if the schema
-	 * has an object with a key "users" instead of "user"
+	 * has an object with a key "subjects" instead of "subject"
 	 *
 	 * @default false
 	 */

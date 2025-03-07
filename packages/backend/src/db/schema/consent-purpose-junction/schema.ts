@@ -12,20 +12,20 @@ import { z } from 'zod';
  * @example
  * ```typescript
  * const junctionData = {
- *   id: '123e4567-e89b-12d3-a456-426614174000',
- *   consentId: 'consent-123',
- *   purposeId: 'purpose-456',
+ *   id: 'pjx_w5qufx2a66m7xkn3ty',
+ *   consentId: 'cns_hadt8w7nngm7xmx2bn',
+ *   purposeId: 'pur_e8zyhgozr3im7xj59it',
  *   status: 'active'
  * };
  *
  * // Validate and parse the junction data
- * const validJunction = purposeJunctionSchema.parse(junctionData);
+ * const validJunction = consentPurposeJunctionSchema.parse(junctionData);
  * ```
  */
-export const purposeJunctionSchema = z.object({
+export const consentPurposeJunctionSchema = z.object({
 	id: z.string(),
 	consentId: z.string(),
-	purposeId: z.string(),
+	consentPurposeId: z.string(),
 	status: z
 		.enum(['active', 'withdrawn'], {
 			errorMap: () => ({
@@ -43,7 +43,7 @@ export const purposeJunctionSchema = z.object({
  * Type definition for PurposeJunction
  *
  * This type represents the structure of a consent-purpose junction record
- * as defined by the purposeJunctionSchema. It includes all fields
+ * as defined by the consentPurposeJunctionSchema. It includes all fields
  * that are part of the junction entity.
  */
-export type PurposeJunction = z.infer<typeof purposeJunctionSchema>;
+export type PurposeJunction = z.infer<typeof consentPurposeJunctionSchema>;

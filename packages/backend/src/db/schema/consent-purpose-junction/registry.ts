@@ -15,7 +15,7 @@ import { validateEntityOutput } from '../definition';
  *
  * @example
  * ```typescript
- * const junctionAdapter = createPurposeJunctionAdapter(
+ * const junctionAdapter = createConsentPurposeJunctionAdapter(
  *   databaseAdapter,
  *   createWithHooks,
  *   updateWithHooks,
@@ -23,14 +23,17 @@ import { validateEntityOutput } from '../definition';
  * );
  *
  * // Create a new junction record
- * const junction = await junctionAdapter.createPurposeJunction({
- *   consentId: 'consent-123',
- *   purposeId: 'purpose-456',
+ * const junction = await junctionAdapter.createConsentPurposeJunction({
+ *   consentId: 'cns_hadt8w7nngm7xmx2bn',
+ *   purposeId: 'pol_tioiyf19tbkm7xn5vpx',
  *   status: 'active'
  * });
  * ```
  */
-export function purposeJunctionRegistry({ adapter, ...ctx }: RegistryContext) {
+export function consentPurposeJunctionRegistry({
+	adapter,
+	...ctx
+}: RegistryContext) {
 	const { createWithHooks, updateWithHooks } = getWithHooks(adapter, ctx);
 	return {
 		/**
@@ -43,7 +46,7 @@ export function purposeJunctionRegistry({ adapter, ...ctx }: RegistryContext) {
 		 * @returns The created junction record with all fields populated
 		 * @throws May throw an error if hooks prevent creation or if database operations fail
 		 */
-		createPurposeJunction: async (
+		createConsentPurposeJunction: async (
 			junction: Omit<PurposeJunction, 'id' | 'createdAt' | 'status'> &
 				Partial<PurposeJunction>,
 			context?: GenericEndpointContext
@@ -55,7 +58,7 @@ export function purposeJunctionRegistry({ adapter, ...ctx }: RegistryContext) {
 					...junction,
 					status: 'active',
 				},
-				model: 'purposeJunction',
+				model: 'consentPurposeJunction',
 				customFn: undefined,
 				context,
 			});
@@ -76,9 +79,9 @@ export function purposeJunctionRegistry({ adapter, ...ctx }: RegistryContext) {
 		 * @param consentId - The consent ID to find purposes for
 		 * @returns Array of junction records associated with the consent
 		 */
-		findPurposesByConsentId: async (consentId: string) => {
+		findConsentPurposesByConsentId: async (consentId: string) => {
 			const junctions = await adapter.findMany({
-				model: 'purposeJunction',
+				model: 'consentPurposeJunction',
 				where: [
 					{
 						field: 'consentId',
@@ -92,20 +95,20 @@ export function purposeJunctionRegistry({ adapter, ...ctx }: RegistryContext) {
 			});
 
 			return junctions.map((junction) =>
-				validateEntityOutput('purposeJunction', junction, ctx.options)
+				validateEntityOutput('consentPurposeJunction', junction, ctx.options)
 			);
 		},
 
 		/**
-		 * Finds all junction records for a specific purpose.
+		 * Finds all junction records for a specific consentPurpose.
 		 * Returns junctions with processed output fields according to the schema configuration.
 		 *
-		 * @param purposeId - The purpose ID to find consents for
-		 * @returns Array of junction records associated with the purpose
+		 * @param purposeId - The consentPurpose ID to find consents for
+		 * @returns Array of junction records associated with the consentPurpose
 		 */
-		findPurposesByPurposeId: async (purposeId: string) => {
+		findConsentPurposesByPurposeId: async (purposeId: string) => {
 			const junctions = await adapter.findMany({
-				model: 'purposeJunction',
+				model: 'consentPurposeJunction',
 				where: [
 					{
 						field: 'purposeId',
@@ -119,7 +122,7 @@ export function purposeJunctionRegistry({ adapter, ...ctx }: RegistryContext) {
 			});
 
 			return junctions.map((junction) =>
-				validateEntityOutput('purposeJunction', junction, ctx.options)
+				validateEntityOutput('consentPurposeJunction', junction, ctx.options)
 			);
 		},
 
@@ -133,7 +136,7 @@ export function purposeJunctionRegistry({ adapter, ...ctx }: RegistryContext) {
 		 * @param context - Optional endpoint context for hooks
 		 * @returns The updated junction if successful, null if not found or hooks prevented update
 		 */
-		updatePurposeJunction: async (
+		updateConsentPurposeJunction: async (
 			junctionId: string,
 			status: 'active' | 'withdrawn',
 			context?: GenericEndpointContext
@@ -149,26 +152,26 @@ export function purposeJunctionRegistry({ adapter, ...ctx }: RegistryContext) {
 						value: junctionId,
 					},
 				],
-				model: 'purposeJunction',
+				model: 'consentPurposeJunction',
 				customFn: undefined,
 				context,
 			});
 			return junction
-				? validateEntityOutput('purposeJunction', junction, ctx.options)
+				? validateEntityOutput('consentPurposeJunction', junction, ctx.options)
 				: null;
 		},
 
 		/**
 		 * Deletes all junction records for a specific consent.
-		 * This effectively removes all purpose connections for the consent.
+		 * This effectively removes all consentPurpose connections for the consent.
 		 *
-		 * @param consentId - The ID of the consent to remove all purpose connections for
+		 * @param consentId - The ID of the consent to remove all consentPurpose connections for
 		 * @returns True if successful, false otherwise
 		 */
-		deletePurposeJunctionsByConsentId: async (consentId: string) => {
+		deleteConsentPurposeJunctionsByConsentId: async (consentId: string) => {
 			try {
 				await adapter.deleteMany({
-					model: 'purposeJunction',
+					model: 'consentPurposeJunction',
 					where: [
 						{
 							field: 'consentId',

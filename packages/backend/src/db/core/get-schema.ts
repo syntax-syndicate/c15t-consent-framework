@@ -31,14 +31,8 @@ interface SchemaEntry {
  * ```typescript
  * const schema = getSchema(config);
  *
- * // Access user entity definition
- * const userFields = schema.user.fields;
- *
- * // Check field reference
- * const emailField = userFields.email;
- * if (emailField.references) {
- *   console.log(`Email references ${emailField.references.entity}`);
- * }
+ * // Access subject entity definition
+ * const subjectFields = schema.subject.fields;
  * ```
  */
 export function getSchema(config: C15TOptions) {

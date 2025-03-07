@@ -3,15 +3,15 @@ import type { RegistryContext } from '~/types/context';
 import {
 	auditLogRegistry,
 	consentGeoLocationRegistry,
+	consentPurposeJunctionRegistry,
+	consentPurposeRegistry,
+	consentRecordRegistry,
 	consentRegistry,
+	consentWithdrawalRegistry,
 	domainRegistry,
 	geoLocationRegistry,
 	policyRegistry,
-	purposeJunctionRegistry,
-	purposeRegistry,
-	recordRegistry,
-	userRegistry,
-	withdrawalRegistry,
+	subjectRegistry,
 } from './schema/index';
 
 export const createRegistry = (ctx: RegistryContext) => {
@@ -21,11 +21,11 @@ export const createRegistry = (ctx: RegistryContext) => {
 		...domainRegistry(ctx),
 		...geoLocationRegistry(ctx),
 		...consentGeoLocationRegistry(ctx),
-		...purposeJunctionRegistry(ctx),
-		...purposeRegistry(ctx),
+		...consentPurposeJunctionRegistry(ctx),
+		...consentPurposeRegistry(ctx),
 		...policyRegistry(ctx),
-		...recordRegistry(ctx),
-		...userRegistry(ctx),
-		...withdrawalRegistry(ctx),
+		...consentRecordRegistry(ctx),
+		...subjectRegistry(ctx),
+		...consentWithdrawalRegistry(ctx),
 	};
 };
