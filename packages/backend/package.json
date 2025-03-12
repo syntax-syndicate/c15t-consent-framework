@@ -3,6 +3,9 @@
 	"version": "0.0.1-rc.10",
 	"license": "GPL-3.0-only",
 	"type": "module",
+	"publishConfig": {
+		"access": "public"
+	},
 	"exports": {
 		".": {
 			"types": "./dist/index.d.ts",
