@@ -1,14 +1,17 @@
-import { router } from './api/index';
-import { BASE_ERROR_CODES, failAsync, okAsync, safeResultAsync } from './error';
-import type { C15TResult, C15TResultAsync } from './error/results';
+import {
+	ERROR_CODES,
+	type SDKResult,
+	type SDKResultAsync,
+	failAsync,
+	okAsync,
+	tryCatchAsync,
+} from './pkgs/results';
+import { router } from './router';
+
+import { getBaseURL } from '~/pkgs/utils';
+import type { C15TContext, C15TOptions, C15TPlugin } from '~/types';
 import { init } from './init';
-import type {
-	C15TContext,
-	C15TOptions,
-	C15TPlugin,
-	FilterActions,
-} from './types';
-import { getBaseURL } from './utils';
+import type { FilterActions } from './pkgs/types';
 
 /**
  * Interface representing a configured c15t consent management instance.
@@ -20,7 +23,7 @@ import { getBaseURL } from './utils';
  * management system. It includes methods for handling requests, accessing API
  * endpoints, and managing the system's configuration.
  *
- * All asynchronous operations return {@link C15TResultAsync} types for
+ * All asynchronous operations return {@link SDKResultAsync} types for
  * consistent error handling across the system.
  *
  * @example
@@ -52,7 +55,7 @@ export interface C15TInstance<PluginTypes extends C15TPlugin[] = C15TPlugin[]> {
 	 * );
 	 * ```
 	 */
-	handler: (request: Request) => Promise<C15TResultAsync<Response>>;
+	handler: (request: Request) => Promise<SDKResultAsync<Response>>;
 
 	/**
 	 * Retrieves available API endpoints and their configurations.
@@ -71,7 +74,7 @@ export interface C15TInstance<PluginTypes extends C15TPlugin[] = C15TPlugin[]> {
 	 * ```
 	 */
 	getApi: () => Promise<
-		C15TResultAsync<FilterActions<ReturnType<typeof router>['endpoints']>>
+		SDKResultAsync<FilterActions<ReturnType<typeof router>['endpoints']>>
 	>;
 
 	/**
@@ -86,7 +89,7 @@ export interface C15TInstance<PluginTypes extends C15TPlugin[] = C15TPlugin[]> {
 	 * The context is wrapped in a Result type to ensure error handling
 	 * consistency. Access should be handled using Result pattern methods.
 	 */
-	$context: Promise<C15TResult<C15TContext>>;
+	$context: Promise<SDKResult<C15TContext>>;
 }
 
 /**
@@ -152,7 +155,7 @@ export const c15tInstance = <
 	 */
 	const handler = async (
 		request: Request
-	): Promise<C15TResultAsync<Response>> => {
+	): Promise<SDKResultAsync<Response>> => {
 		const contextResult = await contextPromise;
 
 		// Map the Result to a ResultAsync for proper chaining
@@ -190,10 +193,10 @@ export const c15tInstance = <
 			try {
 				const { handler } = router(ctx, options);
 
-				// Use safeResultAsync instead of fromPromise
-				return safeResultAsync(
-					handler(request),
-					BASE_ERROR_CODES.REQUEST_HANDLER_ERROR
+				// Use tryCatchAsync with a function that returns a promise
+				return tryCatchAsync(
+					() => handler(request),
+					ERROR_CODES.REQUEST_HANDLER_ERROR
 				);
 			} catch (error) {
 				const safeErrorMessage =
@@ -201,9 +204,9 @@ export const c15tInstance = <
 						? error.message.split('\n')[0]
 						: 'An unknown error occurred';
 				return failAsync(`Error processing request: ${safeErrorMessage}`, {
-					code: BASE_ERROR_CODES.REQUEST_HANDLER_ERROR,
+					code: ERROR_CODES.REQUEST_HANDLER_ERROR,
 					status: 500,
-					data: { url: request.url },
+					meta: { url: request.url },
 				});
 			}
 		});
@@ -215,7 +218,7 @@ export const c15tInstance = <
 	 * @returns A Promise resolving to a Result containing the available API endpoints
 	 */
 	const getApi = async (): Promise<
-		C15TResultAsync<FilterActions<ReturnType<typeof router>['endpoints']>>
+		SDKResultAsync<FilterActions<ReturnType<typeof router>['endpoints']>>
 	> => {
 		const contextResult = await contextPromise;
 
@@ -232,7 +235,7 @@ export const c15tInstance = <
 					return failAsync(
 						`Failed to determine base URL: ${error instanceof Error ? error.message : String(error)}`,
 						{
-							code: BASE_ERROR_CODES.API_RETRIEVAL_ERROR,
+							code: ERROR_CODES.API_RETRIEVAL_ERROR,
 						}
 					);
 				}
@@ -249,15 +252,15 @@ export const c15tInstance = <
 				return failAsync(
 					`Failed to get API endpoints: ${error instanceof Error ? error.message : String(error)}`,
 					{
-						code: BASE_ERROR_CODES.API_RETRIEVAL_ERROR,
-						data: { error },
+						code: ERROR_CODES.API_RETRIEVAL_ERROR,
+						meta: { error },
 					}
 				);
 			}
 		});
 	};
 
-	// Create and return the simplified instance with access to the context
+	// Create and return the instance with a type assertion to prevent internal references from leaking
 	return {
 		handler,
 		getApi,

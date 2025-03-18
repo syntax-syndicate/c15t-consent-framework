@@ -1,56 +1,31 @@
 /**
- * API Types for c15t
+ * API Types for c15t Consent Management
  *
- * Definitions for API routes, request handlers, and endpoint configuration
+ * Extends DoubleTie API types with definitions specific to consent management,
+ * including consent-related API routes, request handlers, and endpoint configuration.
  */
-import type { Endpoint } from 'better-call';
+import type { Endpoint } from '~/pkgs/api-router';
 
 /**
- * Filter action methods from an object type
+ * Base API path template literal for c15t consent endpoints
  *
- * This type utility extracts only the method properties from an object type,
- * useful for API type inference.
- *
- * @typeParam TObject - The object type to filter action methods from
- *
- * @example
- * ```ts
- * interface APIHandlers {
- *   getSubject: (id: string) => Promise<Subject>;
- *   userData: Subject;
- *   updateSubject: (subject: Subject) => Promise<void>;
- * }
- *
- * // ActionKeys will be 'getSubject' | 'updateSubject'
- * type ActionKeys = FilterActions<APIHandlers>[keyof FilterActions<APIHandlers>];
- * ```
- */
-export type FilterActions<TObject extends Record<string, unknown>> = {
-	[Key in keyof TObject]: TObject[Key] extends (...args: unknown[]) => unknown
-		? Key
-		: never;
-};
-
-/**
- * Base API path template literal for c15t endpoints
- *
- * This type defines the base path for all API routes in the c15t system.
- * Used as a foundation for building type-safe API route paths.
+ * This type defines the base path for all consent API routes in the c15t system.
+ * Used as a foundation for building type-safe consent API route paths.
  *
  * @see ApiPath for complete path patterns
  */
 export type ApiPathBase = `/api/c15t`;
 
 /**
- * API route path with strict type checking
+ * Consent API route path with strict type checking
  *
- * This type union represents all valid API paths in the system.
+ * This type union represents all valid consent API paths in the system.
  * It enforces type safety when defining routes or middlewares to
  * prevent typos and ensure consistency.
  *
  * @example
  * ```ts
- * // Valid API path
+ * // Valid consent API path
  * const consentPath: ApiPath = '/api/c15t/consent';
  *
  * // Invalid - would cause a type error
@@ -66,12 +41,12 @@ export type ApiPath =
 	| `${ApiPathBase}/plugins/:id`;
 
 /**
- * Strongly-typed middleware configuration
+ * Strongly-typed middleware configuration for consent API
  *
- * Defines the structure for API middleware registrations,
+ * Defines the structure for consent API middleware registrations,
  * ensuring that both the path and middleware function are properly typed.
  *
- * @see ApiPath for valid path patterns
+ * @see ApiPath for valid consent path patterns
  *
  * @example
  * ```ts
@@ -90,7 +65,7 @@ export type ApiPath =
  */
 export interface ApiMiddleware {
 	/**
-	 * The API path to apply this middleware to
+	 * The consent API path to apply this middleware to
 	 */
 	path: ApiPath;
 

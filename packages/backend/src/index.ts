@@ -14,33 +14,8 @@
  */
 export * from './core';
 
-/**
- * Error codes used throughout the system for consistent error handling
- */
-export * from './error/codes';
-
-//------------------------------------------------------------------------------
-// Utilities and Helpers
-//------------------------------------------------------------------------------
-
-/**
- * General utility functions used throughout the library
- */
-export * from './utils';
-
-//------------------------------------------------------------------------------
-// Client
-//------------------------------------------------------------------------------
-
-/**
- * Client-side integration for implementing consent in browsers
- */
-export * from './client';
-
-/**
- * All client-related types bundled under a namespace to avoid conflicts
- */
-export * as ClientTypes from './client/types';
+// Export the C15TInstance type explicitly for easier consumption
+export type { C15TInstance } from './core';
 
 /**
  * Selected client types needed for common use cases
@@ -67,13 +42,4 @@ export * from './plugins/geo';
 /**
  * All system types bundled under a namespace to avoid conflicts
  */
-export * as Types from './types';
-
-/**
- * Plugin type extension point for type augmentation
- */
-declare module './types/plugins' {
-	interface PluginTypes {
-		// Plugin type interfaces will be added here
-	}
-}
+export * as Types from './pkgs/types';
