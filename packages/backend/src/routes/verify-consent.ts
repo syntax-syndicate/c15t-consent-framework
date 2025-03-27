@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { C15T_ERROR_CODES } from '~/error-codes';
 import { createSDKEndpoint } from '~/pkgs/api-router';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
-import type { C15TContext } from '~/types';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
+import type { C15TContext } from '~/types';
 
 // Base schema
 const verifyConsentSchema = z.object({

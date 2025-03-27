@@ -4,8 +4,8 @@ import { createSDKEndpoint } from '~/pkgs/api-router';
 import type { Adapter } from '~/pkgs/db-adapters';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import type { Consent, ConsentRecord } from '~/schema';
-import type { C15TContext } from '~/types';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
+import type { C15TContext } from '~/types';
 
 // Base schema for all consent types
 const baseConsentSchema = z.object({
