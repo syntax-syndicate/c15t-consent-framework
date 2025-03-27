@@ -25,7 +25,7 @@ export type PolicyType = z.infer<typeof PolicyTypeSchema>;
  * ```typescript
  * const policyData = {
  *   id: 'pol_w5qufx2a66m7xkn3ty',
- *   version: '1.0.0',
+ *   version: '1.0.0', 
  *   name: 'Privacy Policy 2023',
  *   effectiveDate: new Date(),
  *   content: 'Full policy text...',

@@ -259,27 +259,25 @@ export function policyRegistry({ adapter, ...ctx }: RegistryContext) {
 					});
 
 					// Find latest policy with exact name match directly from database
-					const matchingPolicies = await txAdapter.findMany({
+					const rawLatestPolicy = await txAdapter.findOne({
 						model: 'consentPolicy',
 						where: [
 							{ field: 'isActive', value: true },
 							{
 								field: 'type',
 								value: type,
-								operator: 'ilike',
 							},
 						],
 						sortBy: {
 							field: 'effectiveDate',
 							direction: 'desc',
 						},
-						limit: 1,
 					});
 
-					const latestPolicy = matchingPolicies[0]
+					const latestPolicy = rawLatestPolicy
 						? validateEntityOutput(
 								'consentPolicy',
-								matchingPolicies[0],
+								rawLatestPolicy,
 								ctx.options
 							)
 						: null;

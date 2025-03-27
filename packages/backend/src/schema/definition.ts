@@ -188,6 +188,19 @@ export function validateEntityOutput<TableName extends keyof C15TDBSchema>(
 		throw new Error(`Table ${tableName} not found`);
 	}
 
+	// Pre-process data: Convert date strings to Date objects
+	const processedData = { ...data };
+	for (const [field, def] of Object.entries(table.fields)) {
+		if (def.type === 'date' && typeof processedData[field] === 'string') {
+			processedData[field] = new Date(processedData[field] as string);
+		}
+	}
+
 	// Validate and return data using Zod schema
-	return table.schema.parse(data) as EntityOutputFields<TableName>;
+	try {
+		return table.schema.parse(processedData) as EntityOutputFields<TableName>;
+	} catch (error) {
+		console.error('Validation failed:', table, error);
+		throw error;
+	}
 }

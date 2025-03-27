@@ -13,11 +13,11 @@ export interface ConsentPolicyEntityConfig extends BaseEntityConfig {
 		/**
 		 * ISO format date string (e.g., "2024-04-15T00:00:00Z")
 		 */
-		effectiveDate?: string;
+		effectiveDate?: Date;
 		/**
 		 * ISO format date string (e.g., "2024-04-15T00:00:00Z")
 		 */
-		expirationDate?: string;
+		expirationDate?: Date;
 		content?: string;
 		contentHash?: string;
 		isActive?: string;
