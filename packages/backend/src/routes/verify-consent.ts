@@ -2,36 +2,18 @@ import { z } from 'zod';
 import { C15T_ERROR_CODES } from '~/error-codes';
 import { createSDKEndpoint } from '~/pkgs/api-router';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
-import type {} from '~/schema';
 import type { C15TContext } from '~/types';
-
-const ConsentType = z.enum([
-	'cookie_banner',
-	'privacy_policy',
-	'dpa',
-	'terms_of_service',
-	'marketing_communications',
-	'age_verification',
-	'other',
-]);
-
-export type ConsentType = z.infer<typeof ConsentType>;
+import { PolicyTypeSchema } from '~/schema/consent-policy';
 
 // Base schema
 const verifyConsentSchema = z.object({
 	subjectId: z.string().optional(),
 	externalSubjectId: z.string().optional(),
 	domain: z.string(),
-	type: ConsentType,
+	type: PolicyTypeSchema,
 	policyId: z.string().optional(),
 	preferences: z.string().optional(), // Needs to be parsed,
 });
-
-export interface SetConsentResponse {
-	success: boolean;
-	consentId: string;
-	timestamp: string;
-}
 
 export interface VerifyConsentResponse {
 	isValid: boolean;

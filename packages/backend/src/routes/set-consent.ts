@@ -5,25 +5,14 @@ import type { Adapter } from '~/pkgs/db-adapters';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import type { Consent, ConsentRecord } from '~/schema';
 import type { C15TContext } from '~/types';
-
-const ConsentType = z.enum([
-	'cookie_banner',
-	'privacy_policy',
-	'dpa',
-	'terms_of_service',
-	'marketing_communications',
-	'age_verification',
-	'other',
-]);
-
-export type ConsentType = z.infer<typeof ConsentType>;
+import { PolicyTypeSchema } from '~/schema/consent-policy';
 
 // Base schema for all consent types
 const baseConsentSchema = z.object({
 	subjectId: z.string().optional(),
 	externalSubjectId: z.string().optional(),
 	domain: z.string(),
-	type: ConsentType,
+	type: PolicyTypeSchema,
 	metadata: z.record(z.unknown()).optional(),
 });
 
@@ -177,9 +166,7 @@ export const setConsent = createSDKEndpoint(
 					);
 				}
 			} else {
-				const policy = await registry.findOrCreatePolicy(
-					type.replace('_', ' ')
-				);
+				const policy = await registry.findOrCreatePolicy(type);
 				if (!policy) {
 					throw new DoubleTieError(
 						'Failed to create or find the required policy. Please try again later or contact support if the issue persists.',

@@ -9,6 +9,7 @@ export interface ConsentPolicyEntityConfig extends BaseEntityConfig {
 		id?: string;
 		version?: string;
 		name?: string;
+		type?: string;
 		/**
 		 * ISO format date string (e.g., "2024-04-15T00:00:00Z")
 		 */
