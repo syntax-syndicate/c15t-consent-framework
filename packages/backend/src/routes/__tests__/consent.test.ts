@@ -108,6 +108,7 @@ describe('Consent Endpoints', () => {
 
 			beforeEach(async () => {
 				policy = await context.registry.createConsentPolicy({
+					type: 'privacy_policy',
 					name: 'Test Privacy Policy',
 					version: '1.0',
 					content: 'Test content',
