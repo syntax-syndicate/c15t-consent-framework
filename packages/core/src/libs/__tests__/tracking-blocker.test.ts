@@ -89,7 +89,7 @@ describe('TrackingBlocker', () => {
 
 	test('blocks XMLHttpRequest to tracking domains when consent not granted', () => {
 		// Create tracking blocker with default consents
-		// const trackingBlocker = createTrackingBlocker({}, BLOCKED_CONSENT);
+		const _trackingBlocker = createTrackingBlocker({}, BLOCKED_CONSENT);
 		// Create new XMLHttpRequest
 		const xhr = new XMLHttpRequest();
 
