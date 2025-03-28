@@ -11,15 +11,25 @@ import type {
 	c15tClientOptions,
 } from './types';
 
-let consentBannerRequestStatus: 'idle' | 'pending' | 'completed' = 'idle';
-let consentBannerRequestPromise: Promise<
-	ConsentBannerResponse | undefined
-> | null = null;
-
 /**
  * Default consent banner API URL
  */
 const DEFAULT_API_BASE_URL = '/api/c15t';
+
+/**
+ * Regex pattern to detect absolute URLs (with protocol)
+ */
+const ABSOLUTE_URL_REGEX = /^https?:\/\//i;
+
+/**
+ * Regex pattern to remove trailing slashes
+ */
+const TRAILING_SLASHES_REGEX = /\/+$/;
+
+/**
+ * Regex pattern to remove leading slashes
+ */
+const LEADING_SLASHES_REGEX = /^\/+/;
 
 /**
  * API endpoint paths
@@ -109,6 +119,34 @@ export class c15tClient {
 	}
 
 	/**
+	 * Resolves a URL path against a base URL, handling both absolute and relative base URLs.
+	 *
+	 * @param baseURL - The base URL (can be absolute or relative)
+	 * @param path - The path to append
+	 * @returns The resolved URL string
+	 */
+	private resolveUrl(baseURL: string, path: string): string {
+		// Case 1: baseURL is already an absolute URL (includes protocol)
+		if (ABSOLUTE_URL_REGEX.test(baseURL)) {
+			try {
+				return new URL(path, baseURL).toString();
+			} catch {
+				// Fallback to string concatenation if URL constructor fails
+				const cleanBase = baseURL.replace(TRAILING_SLASHES_REGEX, '');
+				const cleanPath = path.replace(LEADING_SLASHES_REGEX, '');
+				return `${cleanBase}/${cleanPath}`;
+			}
+		}
+
+		// Case 2: baseURL is relative (like '/api/c15t')
+		// For relative URLs, we use string concatenation with proper slash handling
+		const cleanBase = baseURL.replace(TRAILING_SLASHES_REGEX, ''); // Remove trailing slashes
+		const cleanPath = path.replace(LEADING_SLASHES_REGEX, ''); // Remove leading slashes
+
+		return `${cleanBase}/${cleanPath}`;
+	}
+
+	/**
 	 * Generic method for making HTTP requests to the API.
 	 *
 	 * This internal method handles constructing the request, processing the response,
@@ -127,7 +165,17 @@ export class c15tClient {
 		options: FetchOptions<ResponseType> = {}
 	): Promise<ResponseContext<ResponseType>> {
 		try {
-			const url = new URL(path, this.baseURL);
+			// Use the resolveUrl method instead of direct URL construction
+			const urlString = this.resolveUrl(this.baseURL, path);
+
+			// Create URL object for search params (this should work even with relative URLs
+			// since we're creating it in the browser context)
+			const url = new URL(
+				urlString,
+				typeof window !== 'undefined'
+					? window.location.href
+					: 'http://localhost'
+			);
 
 			// Add query parameters
 			if (options.query) {
@@ -372,100 +420,6 @@ export class c15tClient {
 				...options,
 			}
 		);
-	}
-
-	/**
-	 * Checks if a consent banner should be shown with caching and deduplication.
-	 *
-	 * This method ensures that only one API request is made even if called multiple times,
-	 * and provides callbacks for success and error handling.
-	 *
-	 * @param hasConsented - Function to check if user has already consented
-	 * @param onSuccess - Callback function for successful fetch
-	 * @param onError - Callback function for fetch errors
-	 * @returns A promise resolving to the consent banner information or undefined if not needed
-	 */
-	async showConsentBannerWithCallbacks(
-		hasConsented: () => boolean,
-		onSuccess: (data: ConsentBannerResponse) => void,
-		onError: (errorMessage: string) => void
-	): Promise<ConsentBannerResponse | undefined> {
-		// Skip if not in browser environment
-		if (typeof window === 'undefined') {
-			return undefined;
-		}
-
-		// Skip if user has already consented
-		if (hasConsented()) {
-			return undefined;
-		}
-
-		// If a request is already pending, return the existing promise
-		if (
-			consentBannerRequestStatus === 'pending' &&
-			consentBannerRequestPromise
-		) {
-			return await consentBannerRequestPromise;
-		}
-
-		// If a request has already been completed, don't make another one
-		if (consentBannerRequestStatus === 'completed') {
-			return undefined;
-		}
-
-		// Set request status to pending
-		consentBannerRequestStatus = 'pending';
-
-		// Create the request promise
-		consentBannerRequestPromise = (async () => {
-			try {
-				const { data, error } = await this.showConsentBanner();
-
-				if (error) {
-					throw new Error(
-						`Failed to fetch consent banner info: ${error.message}`
-					);
-				}
-
-				if (!data) {
-					throw new Error('No data returned from consent banner API');
-				}
-
-				// Call success callback
-				onSuccess(data);
-
-				// Set request status to completed
-				consentBannerRequestStatus = 'completed';
-
-				return data;
-			} catch (error) {
-				console.error('Error fetching consent banner information:', error);
-
-				// Call the onError callback
-				const errorMessage =
-					error instanceof Error
-						? error.message
-						: 'Unknown error fetching consent banner information';
-				onError(errorMessage);
-
-				// Reset request status to idle so it can be tried again
-				consentBannerRequestStatus = 'idle';
-				consentBannerRequestPromise = null;
-
-				throw error;
-			}
-		})();
-
-		return await consentBannerRequestPromise;
-	}
-
-	/**
-	 * Resets the consent banner request status.
-	 * Useful for testing or forcing a new request.
-	 */
-	resetConsentBannerRequestStatus(): void {
-		consentBannerRequestStatus = 'idle';
-		consentBannerRequestPromise = null;
 	}
 }
 
