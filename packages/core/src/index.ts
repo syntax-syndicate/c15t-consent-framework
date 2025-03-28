@@ -1,6 +1,8 @@
 // Re-export store
 export { createConsentManagerStore } from './store';
 export type { PrivacyConsentState } from './store.type';
+export type { StoreConfig } from './store';
+
 // Re-export all utilities
 export * from './libs/consent-utils';
 export { createTrackingBlocker } from './libs/tracking-blocker';
@@ -30,5 +32,16 @@ export type {
 	JurisdictionInfo,
 	ConsentBannerResponse,
 } from './types';
+
+// Export the client
+export { createConsentClient, c15tClient } from './client';
+
+// Re-export client types
+export type {
+	FetchOptions,
+	ResponseContext,
+	c15tClientOptions,
+	c15tClientPlugin,
+} from './types/client';
 
 export { defaultTranslationConfig } from './translations';

@@ -12,10 +12,7 @@ import { Box } from '../shared/primitives/box';
 import { useState } from 'react';
 import { useTranslations } from '~/hooks/use-translations';
 import { ConsentManagementIcon } from '../shared/ui/logo';
-import {
-	ConsentManagerWidgetAccordion,
-	ConsentManagerWidgetAccordionItems,
-} from './atoms/accordion';
+import { ConsentManagerWidgetAccordion } from './atoms/accordion';
 import {
 	ConsentManagerWidgetAcceptAllButton,
 	ConsentManagerWidgetRejectButton,
@@ -82,9 +79,7 @@ export const ConsentManagerWidget = ({
 				type="multiple"
 				value={openItems}
 				onValueChange={setOpenItems}
-			>
-				<ConsentManagerWidgetAccordionItems />
-			</ConsentManagerWidgetAccordion>
+			/>
 			<ConsentManagerWidgetFooter>
 				<ConsentManagerWidgetFooterSubGroup themeKey="widget.footer.sub-group">
 					<ConsentManagerWidgetRejectButton themeKey="widget.footer.reject-button">

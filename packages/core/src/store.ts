@@ -69,9 +69,24 @@ const getStoredConsent = (): StoredConsent | null => {
 	}
 };
 
-interface StoreConfig {
+/**
+ * Configuration options for the consent manager store.
+ *
+ * @remarks
+ * These options control the behavior of the store,
+ * including tracking blocker configuration and API endpoints.
+ *
+ * @public
+ */
+export interface StoreConfig {
+	/**
+	 * Configuration for the tracking blocker.
+	 */
 	trackingBlockerConfig?: TrackingBlockerConfig;
-	/** URL to fetch consent banner information from */
+
+	/**
+	 * URL to fetch consent banner information from.
+	 */
 	consentBannerApiUrl?: string;
 }
 

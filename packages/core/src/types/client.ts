@@ -1,5 +1,3 @@
-// client/types.ts
-
 /**
  * Configuration options for initializing a c15t client.
  *

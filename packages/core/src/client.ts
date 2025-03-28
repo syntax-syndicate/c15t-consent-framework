@@ -1,5 +1,14 @@
-import type { ConsentPurpose } from '~/schema/consent-purpose';
-import type { FetchOptions, ResponseContext, c15tClientOptions } from './types';
+/**
+ * @packageDocumentation
+ * Client for interacting with the c15t consent management API.
+ */
+
+import type {
+	FetchOptions,
+	ResponseContext,
+	c15tClientOptions,
+} from './types/client';
+import type { ConsentPurpose } from './types/consent-purpose';
 
 /**
  * Client for interacting with the c15t consent management API.
@@ -15,7 +24,7 @@ import type { FetchOptions, ResponseContext, c15tClientOptions } from './types';
  *
  * @example
  * ```typescript
- * import { createConsentClient } from '@c15t/client';
+ * import { createConsentClient } from '@c15t/core';
  *
  * const client = createConsentClient({
  *   baseURL: 'https://example.com/api',
@@ -422,7 +431,7 @@ export class c15tClient {
  *
  * @example
  * ```typescript
- * import { createConsentClient } from '@c15t/client';
+ * import { createConsentClient } from '@c15t/core';
  *
  * // Create a client for your application
  * const client = createConsentClient({

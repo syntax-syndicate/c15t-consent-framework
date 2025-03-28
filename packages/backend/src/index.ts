@@ -24,7 +24,7 @@ export type {
 	c15tClientOptions,
 	FetchOptions,
 	ResponseContext,
-} from './client/types';
+} from '../../core/src/types/client';
 
 //------------------------------------------------------------------------------
 // Plugins
