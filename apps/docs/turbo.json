@@ -3,7 +3,7 @@
 	"tasks": {
 		"build": {
 			"env": [
-        "C15T_SECRET",
+				"C15T_SECRET",
 				"SENTRY_PROJECT",
 				"SENTRY_DSN",
 				"SENTRY_ORG",
