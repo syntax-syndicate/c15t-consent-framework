@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS "geoLocation" (
 CREATE TABLE IF NOT EXISTS "consentPolicy" (
   "id" VARCHAR(255) NOT NULL PRIMARY KEY,
   "version" text NOT NULL,
+  "type" text NOT NULL,
   "name" VARCHAR(255) NOT NULL,
   "effectiveDate" date NOT NULL,
   "expirationDate" date,

@@ -40,6 +40,7 @@ model ConsentPurpose {
 model ConsentPolicy {
   id             String    @id
   version        String
+  type           String
   name           String
   effectiveDate  DateTime
   expirationDate DateTime?
