@@ -3,6 +3,7 @@ import { C15T_ERROR_CODES } from '~/error-codes';
 import { createSDKEndpoint } from '~/pkgs/api-router';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
+import { validateEntityOutput } from '~/schema/definition';
 import type { C15TContext } from '~/types';
 
 // Base schema
@@ -107,7 +108,11 @@ export const verifyConsent = createSDKEndpoint(
 					},
 				});
 
-				const consents = rawConsents.filter((consent) => {
+				const consents = rawConsents.map((consent) =>
+					validateEntityOutput('consent', consent, context.options)
+				);
+
+				const filteredConsents = consents.filter((consent) => {
 					if (!purposeIds) {
 						return true;
 					}
@@ -119,6 +124,20 @@ export const verifyConsent = createSDKEndpoint(
 					);
 				});
 
+				await registry.createAuditLog({
+					subjectId: subjectId,
+					entityType: 'consent_policy',
+					entityId: policyId,
+					actionType: 'verify_consent',
+					metadata: {
+						type,
+						policyId: policyId,
+						purposeIds,
+						success: filteredConsents.length !== 0,
+						consentId: filteredConsents[0]?.id,
+					},
+				});
+
 				if (consents.length === 0) {
 					return {
 						isValid: false,
@@ -128,7 +147,7 @@ export const verifyConsent = createSDKEndpoint(
 
 				return {
 					isValid: true,
-					consent: consents[0],
+					consent: filteredConsents[0],
 				};
 			}
 
@@ -167,8 +186,7 @@ export const verifyConsent = createSDKEndpoint(
 			// Check if the user has consented to the specific policy
 			if (policyId) {
 				const policy = await registry.findConsentPolicyById(policyId);
-
-				if (!policy) {
+				if (!policy || policy.type !== type) {
 					return {
 						isValid: false,
 						reasons: ['Policy not found'],
@@ -198,13 +216,22 @@ export const verifyConsent = createSDKEndpoint(
 				domainId: domainRecord.id,
 			});
 		} catch (error) {
-			context.logger?.error?.('Error verifying consent:', error);
+			context.logger?.error?.(
+				'[verifyConsent] Error verifying consent:',
+				error
+			);
+
 			if (error instanceof z.ZodError) {
-				context.logger?.error?.(JSON.stringify(error.errors));
+				context.logger?.error?.(
+					'[verifyConsent] Zod error:',
+					JSON.stringify(error.issues)
+				);
 			}
+
 			if (error instanceof DoubleTieError) {
 				throw error;
 			}
+
 			if (error instanceof z.ZodError) {
 				throw new DoubleTieError(
 					'The verification request data is invalid. Please ensure all required fields are correctly filled and formatted.',

@@ -15,7 +15,6 @@ export function createMockContext(): C15TContext {
 			getConsent: vi.fn(),
 			withdrawConsent: vi.fn(),
 			verifyConsent: vi.fn(),
-			getConsentHistory: vi.fn(),
 			getConsentPolicy: vi.fn(),
 			generateConsentReceipt: vi.fn(),
 		},

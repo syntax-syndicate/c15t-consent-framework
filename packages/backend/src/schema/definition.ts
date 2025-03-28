@@ -12,6 +12,7 @@ import { getDomainTable } from './domain/table';
 import { getGeoLocationTable } from './geo-location/table';
 import type { InferTableShape } from './schemas';
 import { getSubjectTable } from './subject/table';
+import { ZodError } from 'node_modules/zod/lib/ZodError';
 
 /**
  * Retrieves all consent-related database table definitions
@@ -196,11 +197,31 @@ export function validateEntityOutput<TableName extends keyof C15TDBSchema>(
 		}
 	}
 
+	// This is useful for debugging validation issues
+	// console.log('[validateEntityOutput] Debug data:', {
+	// 	fields: Object.fromEntries(
+	// 		Object.entries(table.fields).map(([key, field]) => [
+	// 			key,
+	// 			{
+	// 				type: field.type,
+	// 				required: field.required,
+	// 				value: processedData[field.fieldName as keyof typeof processedData],
+	// 			},
+	// 		])
+	// 	),
+	// });
+
 	// Validate and return data using Zod schema
 	try {
 		return table.schema.parse(processedData) as EntityOutputFields<TableName>;
 	} catch (error) {
-		console.error('Validation failed:', table, error);
+		if (error instanceof ZodError) {
+			console.log(
+				'[validateEntityOutput] Validation failed:',
+				table,
+				error.issues
+			);
+		}
 		throw error;
 	}
 }

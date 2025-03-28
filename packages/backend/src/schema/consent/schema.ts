@@ -29,29 +29,21 @@ import { z } from 'zod';
  * };
  * ```
  */
-export const consentHistorySchema = z.object({
-	actionType: z.enum(['given', 'withdrawn', 'updated', 'expired']),
-	timestamp: z.date(),
-	details: z.record(z.unknown()).optional(),
-	previousState: z.record(z.unknown()).optional(),
-	newState: z.record(z.unknown()).optional(),
-});
 
 export const consentSchema = z.object({
 	id: z.string(),
 	subjectId: z.string(),
 	domainId: z.string(),
 	purposeIds: z.array(z.string()),
-	metadata: z.record(z.unknown()).optional(),
+	metadata: z.record(z.unknown()).nullable().optional(),
 	policyId: z.string().optional(),
-	ipAddress: z.string().optional(),
-	userAgent: z.string().optional(),
+	ipAddress: z.string().nullable().optional(),
+	userAgent: z.string().nullable().optional(),
 	status: z.enum(['active', 'withdrawn', 'expired']).default('active'),
-	withdrawalReason: z.string().optional(),
+	withdrawalReason: z.string().nullable().optional(),
 	givenAt: z.date().default(() => new Date()),
-	validUntil: z.date().optional(),
+	validUntil: z.date().nullable().optional(),
 	isActive: z.boolean().default(true),
-	history: z.array(consentHistorySchema).default([]),
 });
 
 /**
@@ -62,4 +54,3 @@ export const consentSchema = z.object({
  * that are part of the consent entity and its history.
  */
 export type Consent = z.infer<typeof consentSchema>;
-export type ConsentHistory = z.infer<typeof consentHistorySchema>;

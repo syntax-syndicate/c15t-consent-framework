@@ -219,6 +219,8 @@ export const setConsent = createSDKEndpoint(
 							status: 'active',
 							isActive: true,
 							givenAt: now,
+							ipAddress: ctx.context.ipAddress || 'unknown',
+							agent: ctx.context.userAgent || 'unknown',
 							history: [],
 						},
 					})) as unknown as Consent;
@@ -248,6 +250,8 @@ export const setConsent = createSDKEndpoint(
 								type,
 							},
 							timestamp: now,
+							ipAddress: ctx.context.ipAddress || 'unknown',
+							agent: ctx.context.userAgent || 'unknown',
 						},
 					});
 
