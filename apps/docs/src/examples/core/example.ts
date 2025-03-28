@@ -174,11 +174,31 @@ export const pages = {
 }`,
 
 	'script.js': `
-import { createConsentManagerStore } from 'https://cdn.skypack.dev/c15t';
+import { createConsentManagerStore, createConsentClient } from 'https://cdn.skypack.dev/c15t';
 
-// Create the consent manager store
-const consentManager = createConsentManagerStore();
-console.log(consentManager.getState())
+// Configuration for the consent manager
+const config = {
+    client: createConsentManagerStore({
+        baseURL: '/api/c15t',
+        defaultPreferences: {
+            analytics: true,
+            marketing: true,
+            preferences: true,
+        }
+}),
+    store: {
+        namespace: 'c15tExample',
+        trackingBlockerConfig: {
+            disableAutomaticBlocking: false
+        }
+    }
+};
+
+// Create the consent manager store with configuration
+const consentManager = createConsentManagerStore(config.store.namespace, {
+    apiBaseURL: config.client.baseURL,
+    trackingBlockerConfig: config.store.trackingBlockerConfig
+});
 
 // Get the cookie banner element
 const cookieBanner = document.getElementById('cookie-banner');
@@ -187,23 +207,21 @@ const rejectButton = document.getElementById('reject-button');
 
 // Show the banner if consent hasn't been given yet
 if (consentManager.getState().showPopup) {
-  cookieBanner.classList.add('show');
+    cookieBanner.classList.add('show');
 }
 
 // Handle accept all
 acceptButton.addEventListener('click', () => {
-  console.log('accept all')
-  consentManager.getState().saveConsents('all');
-  cookieBanner.classList.remove('show');
+    console.log('accept all');
+    consentManager.getState().saveConsents('all');
+    cookieBanner.classList.remove('show');
 });
 
 // Handle reject all
 rejectButton.addEventListener('click', () => {
-  console.log('reject all')
-  consentManager.getState().saveConsents('necessary');
-  cookieBanner.classList.remove('show');
+    console.log('reject all');
+    consentManager.getState().saveConsents('necessary');
+    cookieBanner.classList.remove('show');
 });
-
-
 `,
 };

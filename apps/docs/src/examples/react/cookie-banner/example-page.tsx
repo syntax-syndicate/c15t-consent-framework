@@ -3,12 +3,22 @@ export const pages = {
 import { ExampleContent } from './ExampleContent';
 import { clearLocalStorage } from './lib/utils';
 
+const clientConfig = {
+    baseURL: '/api/c15t-demo',
+    defaultPreferences: {
+        analytics: true,
+        marketing: true,
+        preferences: true,
+    },
+};
+
 export default function App() {
     // Clear localStorage on mount to ensure a clean state
     clearLocalStorage();
 
     return (
         <ConsentManagerProvider 
+            clientConfig={clientConfig}
             initialGdprTypes={['necessary', 'marketing']}
         >
             <CookieBanner />
