@@ -5,20 +5,19 @@
  */
 
 import { createStore } from 'zustand/vanilla';
+import { createConsentClient } from './client';
 import {
 	getEffectiveConsents,
 	hasConsentFor,
 	hasConsented,
 } from './libs/consent-utils';
-import {
-	DEFAULT_CONSENT_BANNER_API_URL,
-	fetchConsentBannerInfo as fetchConsentBanner,
-} from './libs/fetch-consent-banner';
+import {} from './libs/fetch-consent-banner';
 import { createTrackingBlocker } from './libs/tracking-blocker';
 import type { TrackingBlockerConfig } from './libs/tracking-blocker';
 import { initialState } from './store.initial-state';
 import type { PrivacyConsentState } from './store.type';
 import {
+	type ConsentBannerResponse,
 	type ConsentState,
 	type TranslationConfig,
 	consentTypes,
@@ -43,6 +42,7 @@ interface StoredConsent {
 	} | null;
 }
 
+const DEFAULT_API_BASE_URL = '/api/c15t';
 /**
  * Retrieves stored consent data from localStorage.
  *
@@ -88,6 +88,11 @@ export interface StoreConfig {
 	 * URL to fetch consent banner information from.
 	 */
 	consentBannerApiUrl?: string;
+
+	/**
+	 * Base URL for the consent client.
+	 */
+	apiBaseURL?: string;
 }
 
 /**
@@ -391,18 +396,12 @@ export const createConsentManagerStore = (
 		/**
 		 * Fetches consent banner information from the API and updates the store.
 		 *
-		 * @param url - The URL to fetch consent banner information from
-		 * @returns A promise that resolves when the fetch is complete
-		 *
-		 * @remarks
-		 * This function:
-		 * 1. Fetches consent banner information from the API
-		 * 2. Updates the store with the location and jurisdiction information
-		 * 3. Sets the showPopup state based on the API response
-		 * 4. Updates the detected country based on the location information
-		 * 5. Prevents multiple simultaneous requests
+		 * @param url - Optional custom URL to fetch consent banner information from
+		 * @returns A promise that resolves with the consent banner response when the fetch is complete
 		 */
-		fetchConsentBannerInfo: async (url) => {
+		fetchConsentBannerInfo: async (
+			url?: string
+		): Promise<ConsentBannerResponse | undefined> => {
 			// Skip if not in browser environment
 			if (typeof window === 'undefined') {
 				return undefined;
@@ -418,12 +417,13 @@ export const createConsentManagerStore = (
 			// Set loading state to true
 			set({ isLoadingConsentInfo: true });
 
-			// Use the extracted fetchConsentBanner function
-			try {
-				const apiUrl =
-					url || config?.consentBannerApiUrl || DEFAULT_CONSENT_BANNER_API_URL;
+			// Create a client for this request
+			const client = createConsentClient({
+				baseURL: url || config?.apiBaseURL || DEFAULT_API_BASE_URL,
+			});
 
-				return await fetchConsentBanner(
+			try {
+				return await client.showConsentBannerWithCallbacks(
 					get().hasConsented,
 					(data) => {
 						// Update store with location and jurisdiction information
@@ -457,12 +457,9 @@ export const createConsentManagerStore = (
 						if (get().consentInfo === null) {
 							set({ showPopup: true });
 						}
-					},
-					apiUrl
+					}
 				);
 			} catch (error) {
-				// This catch block should not be reached as errors are handled in the fetchConsentBanner function
-				// But we keep it as a safety measure
 				console.error('Unexpected error in fetchConsentBannerInfo:', error);
 				set({ isLoadingConsentInfo: false });
 				return undefined;

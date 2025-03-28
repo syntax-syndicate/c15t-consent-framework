@@ -4,11 +4,37 @@
  */
 
 import type {
+	ConsentBannerResponse,
+	ConsentPurpose,
 	FetchOptions,
 	ResponseContext,
 	c15tClientOptions,
-} from './types/client';
-import type { ConsentPurpose } from './types/consent-purpose';
+} from './types';
+
+let consentBannerRequestStatus: 'idle' | 'pending' | 'completed' = 'idle';
+let consentBannerRequestPromise: Promise<
+	ConsentBannerResponse | undefined
+> | null = null;
+
+/**
+ * Default consent banner API URL
+ */
+const DEFAULT_API_BASE_URL = '/api/c15t';
+
+/**
+ * API endpoint paths
+ */
+const API_ENDPOINTS = {
+	/**
+	 * Path for the consent banner information endpoint
+	 */
+	SHOW_CONSENT_BANNER: '/show-consent-banner',
+
+	/**
+	 * Path for listing consent purposes
+	 */
+	LIST_PURPOSES: '/list-purposes',
+};
 
 /**
  * Client for interacting with the c15t consent management API.
@@ -227,35 +253,6 @@ export class c15tClient {
 		}
 	}
 
-	// /**
-	//  * Retrieves the current consent preferences.
-	//  *
-	//  * This method fetches the current consent settings for the subject,
-	//  * including which purposes they have consented to and when the
-	//  * consent was last updated.
-	//  *
-	//  * @example
-	//  * ```typescript
-	//  * const { data, error } = await client.getConsent();
-	//  *
-	//  * if (data) {
-	//  *   console.log('Subject consented to analytics:', data.preferences.analytics);
-	//  *   console.log('Consent last updated:', data.updatedAt);
-	//  * }
-	//  * ```
-	//  *
-	//  * @param options - Optional fetch configuration options
-	//  * @returns Response context containing the consent preferences if successful
-	//  */
-	// async getConsent(
-	// 	options?: FetchOptions<ConsentPreference>
-	// ): Promise<ResponseContext<ConsentPreference>> {
-	// 	return this.fetcher<ConsentPreference>('/get-consent', {
-	// 		method: 'GET',
-	// 		...options,
-	// 	});
-	// }
-
 	/**
 	 * Lists all available consent purposes.
 	 *
@@ -289,89 +286,11 @@ export class c15tClient {
 	async listPurposes(
 		options?: FetchOptions<ConsentPurpose[]>
 	): Promise<ResponseContext<ConsentPurpose[]>> {
-		return this.fetcher<ConsentPurpose[]>('/list-purposes', {
+		return this.fetcher<ConsentPurpose[]>(API_ENDPOINTS.LIST_PURPOSES, {
 			method: 'GET',
 			...options,
 		});
 	}
-
-	// /**
-	//  * Updates the subject's consent preferences.
-	//  *
-	//  * This method sends the subject's updated consent choices to the server,
-	//  * recording which purposes they have agreed to and which they have declined.
-	//  *
-	//  * @example
-	//  * ```typescript
-	//  * const { data, error } = await client.updateConsent({
-	//  *   analytics: true,
-	//  *   marketing: false,
-	//  *   preferences: true
-	//  * });
-	//  *
-	//  * if (data) {
-	//  *   console.log('Consent updated successfully');
-	//  *   console.log('New preferences:', data.preferences);
-	//  * }
-	//  * ```
-	//  *
-	//  * @param preferences - Record mapping consentPurpose IDs to boolean consent values
-	//  * @param options - Optional fetch configuration options
-	//  * @returns Response context containing the updated consent preferences if successful
-	//  */
-	// async updateConsent(
-	// 	preferences: Record<string, boolean>,
-	// 	options?: FetchOptions<ConsentPreference>
-	// ): Promise<ResponseContext<ConsentPreference>> {
-	// 	return this.fetcher<ConsentPreference>('/update-consent', {
-	// 		method: 'POST',
-	// 		body: { preferences },
-	// 		...options,
-	// 	});
-	// }
-
-	// /**
-	//  * Retrieves the history of consent changes.
-	//  *
-	//  * This method fetches a chronological record of consent preference changes,
-	//  * showing when and how consent settings were modified.
-	//  *
-	//  * @example
-	//  * ```typescript
-	//  * // Get consent history for a specific subject
-	//  * const { data } = await client.getConsentHistory({
-	//  *   subjectId: 'sub_x1pftyoufsm7xgo1kv',
-	//  *   limit: 10
-	//  * });
-	//  *
-	//  * if (data) {
-	//  *   data.forEach(event => {
-	//  *     console.log(`Change at ${event.timestamp}`);
-	//  *     console.log(`Changed purposes: ${Object.keys(event.changes).join(', ')}`);
-	//  *   });
-	//  * }
-	//  * ```
-	//  *
-	//  * @param query - Query parameters to filter the history results
-	//  * @param options - Optional fetch configuration options
-	//  * @returns Response context containing the list of consent change events if successful
-	//  */
-	// async getConsentHistory(
-	// 	query?: {
-	// 		recordId?: string;
-	// 		subjectId?: string;
-	// 		deviceId?: string;
-	// 		limit?: number;
-	// 		offset?: number;
-	// 	},
-	// 	options?: FetchOptions<ConsentChangeEvent[]>
-	// ): Promise<ResponseContext<ConsentChangeEvent[]>> {
-	// 	return this.fetcher<ConsentChangeEvent[]>('/consent-history', {
-	// 		method: 'GET',
-	// 		query,
-	// 		...options,
-	// 	});
-	// }
 
 	/**
 	 * Makes a custom API request to any endpoint.
@@ -418,6 +337,136 @@ export class c15tClient {
 	): Promise<ResponseContext<ResponseType>> {
 		return this.fetcher<ResponseType>(path, options);
 	}
+
+	/**
+	 * Checks if a consent banner should be shown based on the user's location.
+	 *
+	 * This method determines whether a consent banner should be displayed
+	 * based on the user's location and applicable privacy regulations.
+	 *
+	 * @example
+	 * ```typescript
+	 * const { data, error } = await client.showConsentBanner();
+	 *
+	 * if (data) {
+	 *   if (data.showConsentBanner) {
+	 *     console.log(`Banner required due to ${data.jurisdiction.code}: ${data.jurisdiction.message}`);
+	 *     console.log(`User location: ${data.location.countryCode}`);
+	 *     showConsentBanner();
+	 *   } else {
+	 *     console.log('No consent banner required in this jurisdiction');
+	 *   }
+	 * }
+	 * ```
+	 *
+	 * @param options - Optional fetch configuration options
+	 * @returns Response context containing the consent banner information if successful
+	 */
+	async showConsentBanner(
+		options?: FetchOptions<ConsentBannerResponse>
+	): Promise<ResponseContext<ConsentBannerResponse>> {
+		return this.fetcher<ConsentBannerResponse>(
+			API_ENDPOINTS.SHOW_CONSENT_BANNER,
+			{
+				method: 'GET',
+				...options,
+			}
+		);
+	}
+
+	/**
+	 * Checks if a consent banner should be shown with caching and deduplication.
+	 *
+	 * This method ensures that only one API request is made even if called multiple times,
+	 * and provides callbacks for success and error handling.
+	 *
+	 * @param hasConsented - Function to check if user has already consented
+	 * @param onSuccess - Callback function for successful fetch
+	 * @param onError - Callback function for fetch errors
+	 * @returns A promise resolving to the consent banner information or undefined if not needed
+	 */
+	async showConsentBannerWithCallbacks(
+		hasConsented: () => boolean,
+		onSuccess: (data: ConsentBannerResponse) => void,
+		onError: (errorMessage: string) => void
+	): Promise<ConsentBannerResponse | undefined> {
+		// Skip if not in browser environment
+		if (typeof window === 'undefined') {
+			return undefined;
+		}
+
+		// Skip if user has already consented
+		if (hasConsented()) {
+			return undefined;
+		}
+
+		// If a request is already pending, return the existing promise
+		if (
+			consentBannerRequestStatus === 'pending' &&
+			consentBannerRequestPromise
+		) {
+			return await consentBannerRequestPromise;
+		}
+
+		// If a request has already been completed, don't make another one
+		if (consentBannerRequestStatus === 'completed') {
+			return undefined;
+		}
+
+		// Set request status to pending
+		consentBannerRequestStatus = 'pending';
+
+		// Create the request promise
+		consentBannerRequestPromise = (async () => {
+			try {
+				const { data, error } = await this.showConsentBanner();
+
+				if (error) {
+					throw new Error(
+						`Failed to fetch consent banner info: ${error.message}`
+					);
+				}
+
+				if (!data) {
+					throw new Error('No data returned from consent banner API');
+				}
+
+				// Call success callback
+				onSuccess(data);
+
+				// Set request status to completed
+				consentBannerRequestStatus = 'completed';
+
+				return data;
+			} catch (error) {
+				console.error('Error fetching consent banner information:', error);
+
+				// Call the onError callback
+				const errorMessage =
+					error instanceof Error
+						? error.message
+						: 'Unknown error fetching consent banner information';
+				onError(errorMessage);
+
+				// Reset request status to idle so it can be tried again
+				consentBannerRequestStatus = 'idle';
+				consentBannerRequestPromise = null;
+
+				throw error;
+			}
+		})();
+
+		return await consentBannerRequestPromise;
+	}
+
+	/**
+	 * Resets the consent banner request status.
+	 * Useful for testing or forcing a new request.
+	 */
+	resetConsentBannerRequestStatus(): void {
+		consentBannerRequestStatus = 'idle';
+		consentBannerRequestPromise = null;
+	}
 }
 
 /**
@@ -445,36 +494,17 @@ export class c15tClient {
  *     customFetchImpl: customFetch
  *   }
  * });
- *
- * // Use the client in your application
- * async function handleConsentFlow() {
- *   // Get available purposes
- *   const { data: purposes, error } = await client.listPurposes();
- *
- *   if (error) {
- *     console.error('Failed to load consent purposes:', error.message);
- *     return;
- *   }
- *
- *   // Display purposes to subject and collect their choices
- *   // ...
- *
- *   // Then update their consent
- *   const userChoices = {
- *     analytics: true,
- *     marketing: false
- *   };
- *
- *   await client.$fetch('/update-consent', {
- *     method: 'POST',
- *     body: { preferences: userChoices }
- *   });
- * }
  * ```
  *
  * @param options - Configuration options for the client
  * @returns A new c15tClient instance
  */
 export function createConsentClient(options: c15tClientOptions): c15tClient {
-	return new c15tClient(options);
+	// If no baseURL provided, use the default
+	const clientOptions = {
+		...options,
+		baseURL: options.baseURL || DEFAULT_API_BASE_URL,
+	};
+
+	return new c15tClient(clientOptions);
 }
