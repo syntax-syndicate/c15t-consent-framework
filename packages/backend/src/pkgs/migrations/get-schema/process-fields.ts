@@ -30,7 +30,7 @@ export function processFields<T extends EntityName>(
 
 		// Cast field to Field to ensure it has the right type
 		const typedField = field as Field;
-		actualFields[fieldName] = typedField;
+		actualFields[fieldName as keyof typeof actualFields] = typedField;
 
 		// Handle references to other tables - first check if the field has a references property
 		if (typedField && 'references' in typedField && typedField.references) {
@@ -40,7 +40,7 @@ export function processFields<T extends EntityName>(
 			// Only set up the reference if the referenced table exists
 			if (refTable) {
 				// Create a new object for references to avoid modifying the original
-				actualFields[fieldName] = {
+				actualFields[fieldName as keyof typeof actualFields] = {
 					...typedField,
 					references: {
 						model: refTable.entityName,
@@ -56,7 +56,7 @@ export function processFields<T extends EntityName>(
 					`Warning: Referenced table '${EntityName}' not found for field '${fieldName}'. The reference will be removed to prevent inconsistent state.`
 				);
 				const { references, ...fieldWithoutRef } = typedField;
-				actualFields[fieldName] = fieldWithoutRef;
+				actualFields[fieldName as keyof typeof actualFields] = fieldWithoutRef;
 			}
 		}
 	}

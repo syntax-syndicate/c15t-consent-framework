@@ -56,7 +56,7 @@ export function getSchema(config: C15TOptions) {
 			const fieldName = field.fieldName || fieldKey;
 			// Cast field to Field to ensure it has the right type
 			const typedField = field as Field;
-			processedFields[fieldName] = typedField;
+			processedFields[fieldName as keyof typeof processedFields] = typedField;
 
 			// Handle references - first check if the field has a references property
 			if (typedField && 'references' in typedField && typedField.references) {
@@ -64,7 +64,7 @@ export function getSchema(config: C15TOptions) {
 				const referencedEntity = entities[entityName];
 				if (referencedEntity) {
 					// Create a new object for references to avoid modifying the original
-					processedFields[fieldName] = {
+					processedFields[fieldName as keyof typeof processedFields] = {
 						...typedField,
 						references: {
 							model: referencedEntity.entityName,
