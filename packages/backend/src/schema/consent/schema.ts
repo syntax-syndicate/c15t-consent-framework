@@ -7,7 +7,7 @@ import { z } from 'zod';
  * - Required fields: subjectId, domainId, purposeIds
  * - Default value of 'active' for status
  * - Default current date/time for creation timestamp
- * - Includes audit trail of all changes
+ * - Captures contextual information like IP address and user agent
  *
  * @example
  * ```typescript
@@ -19,13 +19,8 @@ import { z } from 'zod';
  *   status: 'active',
  *   givenAt: new Date(),
  *   isActive: true,
- *   history: [
- *     {
- *       actionType: 'given',
- *       timestamp: new Date(),
- *       details: { ip: '192.168.1.1' }
- *     }
- *   ]
+ *   ipAddress: '192.168.1.1',
+ *   userAgent: 'Mozilla/5.0...',
  * };
  * ```
  */
