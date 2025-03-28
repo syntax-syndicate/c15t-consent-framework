@@ -7,6 +7,6 @@
 			"~/*": ["./src/*"]
 		}
 	},
-	"include": ["src", "../core/src/types/client.ts"],
+	"include": ["src"],
 	"exclude": ["node_modules"]
 }
