@@ -1,17 +1,11 @@
+import { c15tClientExample } from '~/examples/c15t-client-example';
+
 export const pages = {
+	'c15tClient.ts': c15tClientExample,
 	'App.tsx': `import { ConsentManagerProvider, ConsentManagerDialog, CookieBanner } from '@c15t/react';
 import { ExampleContent } from './ExampleContent';
 import { clearLocalStorage } from './lib/utils';
-
-const clientConfig = {
-    baseURL: '/api/c15t-demo',
-    defaultPreferences: {
-        analytics: true,
-        marketing: true,
-        preferences: true,
-    },
-};
-
+import { c15tClient } from './c15tClient';
 export default function App() {
     // Clear localStorage on mount to ensure a clean state
     clearLocalStorage();

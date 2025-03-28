@@ -179,7 +179,7 @@ import { createConsentManagerStore, createConsentClient } from 'https://cdn.skyp
 // Configuration for the consent manager
 const config = {
     client: createConsentManagerStore({
-        baseURL: '/api/c15t',
+        baseURL: '/api/c15t-demo',
         defaultPreferences: {
             analytics: true,
             marketing: true,
