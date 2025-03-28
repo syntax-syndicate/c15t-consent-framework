@@ -1,3 +1,4 @@
+import { ZodError } from 'node_modules/zod/lib/ZodError';
 import type { PluginSchema } from '~/pkgs/data-model';
 import type { C15TOptions } from '~/types';
 import { getAuditLogTable } from './audit-log/table';
@@ -12,7 +13,6 @@ import { getDomainTable } from './domain/table';
 import { getGeoLocationTable } from './geo-location/table';
 import type { InferTableShape } from './schemas';
 import { getSubjectTable } from './subject/table';
-import { ZodError } from 'node_modules/zod/lib/ZodError';
 
 /**
  * Retrieves all consent-related database table definitions
