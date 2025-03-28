@@ -219,54 +219,54 @@ describe('Consent Endpoints', () => {
 			});
 		});
 
-		// describe('Error cases', () => {
-		// 	it('should create anonymous subject when external subject is not found', async () => {
-		// 		const response = await setConsent({
-		// 			context,
-		// 			params: undefined,
-		// 			query: undefined,
-		// 			body: createConsentData('privacy_policy', {
-		// 				externalSubjectId: 'non-existent',
-		// 			}),
-		// 		});
+		describe('Error cases', () => {
+			it('should create anonymous subject when external subject is not found', async () => {
+				const response = await setConsent({
+					context,
+					params: undefined,
+					query: undefined,
+					body: createConsentData('privacy_policy', {
+						externalSubjectId: 'non-existent',
+					}),
+				});
 
-		// 		expectValidConsentResponse(response, 'privacy_policy', {
-		// 			externalSubjectId: 'non-existent',
-		// 		});
-		// 	});
+				expectValidConsentResponse(response, 'privacy_policy', {
+					externalSubjectId: 'non-existent',
+				});
+			});
 
-		// 	it('should error if subject ID is not found', async () => {
-		// 		await expect(
-		// 			setConsent({
-		// 				context,
-		// 				params: undefined,
-		// 				query: undefined,
-		// 				body: createConsentData('privacy_policy', {
-		// 					subjectId: 'non-existent',
-		// 				}),
-		// 			})
-		// 		).rejects.toMatchObject({
-		// 			name: 'DoubleTieError',
-		// 			code: ERROR_CODES.NOT_FOUND,
-		// 			status: 404,
-		// 		});
-		// 	});
+			it('should error if subject ID is not found', async () => {
+				await expect(
+					setConsent({
+						context,
+						params: undefined,
+						query: undefined,
+						body: createConsentData('privacy_policy', {
+							subjectId: 'non-existent',
+						}),
+					})
+				).rejects.toMatchObject({
+					name: 'DoubleTieError',
+					code: ERROR_CODES.NOT_FOUND,
+					status: 404,
+				});
+			});
 
-		// 	it('should handle invalid consent data', async () => {
-		// 		await expect(
-		// 			setConsent({
-		// 				context,
-		// 				params: undefined,
-		// 				query: undefined,
-		// 				body: createConsentData('cookie_banner', {
-		// 					preferences: {
-		// 						marketing: 'invalid' as unknown as boolean,
-		// 						analytics: 'invalid' as unknown as boolean,
-		// 					},
-		// 				}),
-		// 			})
-		// 		).rejects.toThrow('Invalid body parameters');
-		// 	});
-		// });
+			it('should handle invalid consent data', async () => {
+				await expect(
+					setConsent({
+						context,
+						params: undefined,
+						query: undefined,
+						body: createConsentData('cookie_banner', {
+							preferences: {
+								marketing: 'invalid' as unknown as boolean,
+								analytics: 'invalid' as unknown as boolean,
+							},
+						}),
+					})
+				).rejects.toThrow('Invalid body parameters');
+			});
+		});
 	});
 });
