@@ -8,7 +8,7 @@ import type {
 	ComplianceSettings,
 	TrackingBlockerConfig,
 	TranslationConfig,
-	c15tClientOptions,
+	c15tClient,
 } from 'c15t';
 import type { ReactNode } from 'react';
 
@@ -56,10 +56,10 @@ export interface ConsentManagerProviderProps {
 	trackingBlockerConfig?: TrackingBlockerConfig;
 
 	/**
-	 * API client configuration options.
-	 * If provided, a client instance will be created and made available.
+	 * An existing c15tClient instance to use.
+	 * This is required for the provider to work properly.
 	 */
-	clientOptions?: c15tClientOptions;
+	client: c15tClient;
 
 	/**
 	 * Visual theme to apply.

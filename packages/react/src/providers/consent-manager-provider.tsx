@@ -4,7 +4,6 @@ import {
 	type ComplianceRegion,
 	type PrivacyConsentState,
 	type StoreConfig,
-	createConsentClient,
 	createConsentManagerStore,
 	defaultTranslationConfig,
 } from 'c15t';
@@ -29,7 +28,7 @@ import { useColorScheme } from '../hooks/use-color-scheme';
  * @remarks
  * This component initializes and manages the consent management system, including:
  * - Setting up the consent store with initial configuration
- * - Creating an API client instance if clientOptions are provided
+ * - Using the provided API client instance
  * - Detecting user's region for compliance
  * - Managing consent state updates
  * - Providing access to consent management throughout the app
@@ -44,7 +43,7 @@ export function ConsentManagerProvider({
 	noStyle = false,
 	translationConfig,
 	trackingBlockerConfig,
-	clientOptions,
+	client,
 	theme,
 	disableAnimation = false,
 	scrollLock = false,
@@ -64,8 +63,8 @@ export function ConsentManagerProvider({
 		return { ...mergedConfig, defaultLanguage };
 	}, [translationConfig]);
 
-	// Create a stable reference to the store and client with prepared translation config
-	const { store, client } = useMemo(() => {
+	// Create a stable reference to the store with prepared translation config
+	const store = useMemo(() => {
 		// Create the store
 		const storeConfig: StoreConfig = {
 			trackingBlockerConfig,
@@ -76,16 +75,8 @@ export function ConsentManagerProvider({
 		// Set translation config immediately
 		store.getState().setTranslationConfig(preparedTranslationConfig);
 
-		// Create client if options provided
-		const client = clientOptions ? createConsentClient(clientOptions) : null;
-
-		return { store, client };
-	}, [
-		namespace,
-		preparedTranslationConfig,
-		trackingBlockerConfig,
-		clientOptions,
-	]);
+		return store;
+	}, [namespace, preparedTranslationConfig, trackingBlockerConfig]);
 
 	// Initialize state with the current state from the consent manager store
 	const [state, setState] = useState<PrivacyConsentState>(store.getState());
