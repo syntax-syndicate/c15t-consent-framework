@@ -1,9 +1,8 @@
+'use client';
 /**
  * @packageDocumentation
  * Provides the context for sharing consent management state across components.
  */
-
-'use client';
 
 import type { PrivacyConsentState, c15tClient } from 'c15t';
 import { createContext } from 'react';
