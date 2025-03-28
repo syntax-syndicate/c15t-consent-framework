@@ -4,7 +4,7 @@ export const PolicyTypeSchema = z.enum([
 	'cookie_banner',
 	'privacy_policy',
 	'dpa',
-	'terms_of_service',
+	'terms_and_conditions',
 	'marketing_communications',
 	'age_verification',
 	'other',

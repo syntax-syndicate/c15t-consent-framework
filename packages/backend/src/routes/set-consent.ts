@@ -24,7 +24,7 @@ const cookieBannerSchema = baseConsentSchema.extend({
 
 // Policy based consent just needs the policy ID
 const policyBasedSchema = baseConsentSchema.extend({
-	type: z.enum(['privacy_policy', 'dpa', 'terms_of_service']),
+	type: z.enum(['privacy_policy', 'dpa', 'terms_and_conditions']),
 	policyId: z.string().optional(),
 	preferences: z.record(z.boolean()).optional(),
 });
@@ -55,7 +55,7 @@ export interface SetConsentResponse {
  * - cookie_banner: For cookie preferences
  * - privacy_policy: For privacy policy acceptance
  * - dpa: For data processing agreement acceptance
- * - terms_of_service: For terms of service acceptance
+ * - terms_and_conditions: For terms and conditions acceptance
  * - marketing_communications: For marketing preferences
  * - age_verification: For age verification
  * - other: For other types of consent
