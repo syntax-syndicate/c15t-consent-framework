@@ -8,9 +8,9 @@ import {
 import { RootProvider } from 'fumadocs-ui/provider';
 import { Fira_Mono, Inter } from 'next/font/google';
 import type { ReactNode } from 'react';
+import { c15tClient } from '~/c15t-client';
 import { cn } from '~/lib/cn';
 import { SandPackCSS } from './styles/sandpack-styles';
-import { c15tClient } from '~/c15t-client';
 
 const inter = Inter({
 	subsets: ['latin'],

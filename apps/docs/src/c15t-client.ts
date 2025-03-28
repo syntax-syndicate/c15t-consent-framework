@@ -1,4 +1,4 @@
-import {  type c15tClientOptions, createConsentClient } from '@c15t/react';
+import { type c15tClientOptions, createConsentClient } from '@c15t/react';
 /**
  * Create a client for React components to use
  *

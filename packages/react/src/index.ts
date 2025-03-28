@@ -13,8 +13,11 @@ export { useColorScheme } from './hooks/use-color-scheme';
 export { useConsentClient } from './hooks/use-consent-client';
 
 // Export client
-export { createConsentClient } from './client';
-export type { c15tClientOptions, c15tClient } from './client';
+export {
+	createConsentClient,
+	type c15tClient,
+	type c15tClientOptions,
+} from 'c15t';
 
 // Export types
 export type { ConsentManagerProviderProps } from './types/consent-manager';
