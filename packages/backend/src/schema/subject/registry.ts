@@ -95,7 +95,7 @@ export function subjectRegistry({ adapter, ...ctx }: RegistryContext) {
 				]);
 
 				if (!subjectById || !subjectByExternalId) {
-					ctx.logger?.info(
+					ctx.logger?.error(
 						'Subject validation failed: One or both subjects not found',
 						{
 							providedSubjectId: subjectId,
@@ -127,6 +127,7 @@ export function subjectRegistry({ adapter, ...ctx }: RegistryContext) {
 							subjectByExternalIdId: subjectByExternalId.id,
 						}
 					);
+
 					throw new DoubleTieError(
 						'The provided subjectId and externalSubjectId do not match the same subject. Please ensure both identifiers refer to the same subject.',
 						{
@@ -151,7 +152,7 @@ export function subjectRegistry({ adapter, ...ctx }: RegistryContext) {
 				if (subject) {
 					return subject;
 				}
-				throw new DoubleTieError('Subject not found', {
+				throw new DoubleTieError('Subject not found by subjectId', {
 					code: ERROR_CODES.NOT_FOUND,
 					status: 404,
 				});
@@ -262,6 +263,7 @@ export function subjectRegistry({ adapter, ...ctx }: RegistryContext) {
 					},
 				],
 			});
+
 			return subject
 				? validateEntityOutput('subject', subject, ctx.options)
 				: null;
@@ -286,6 +288,7 @@ export function subjectRegistry({ adapter, ...ctx }: RegistryContext) {
 					},
 				],
 			});
+
 			return subject
 				? validateEntityOutput('subject', subject, ctx.options)
 				: null;

@@ -1,5 +1,17 @@
 import { z } from 'zod';
 
+export const PolicyTypeSchema = z.enum([
+	'cookie_banner',
+	'privacy_policy',
+	'dpa',
+	'terms_and_conditions',
+	'marketing_communications',
+	'age_verification',
+	'other',
+]);
+
+export type PolicyType = z.infer<typeof PolicyTypeSchema>;
+
 /**
  * Zod schema for validating consent policy entities.
  *
@@ -27,6 +39,7 @@ import { z } from 'zod';
 export const consentPolicySchema = z.object({
 	id: z.string(),
 	version: z.string(),
+	type: PolicyTypeSchema,
 	name: z.string(),
 	effectiveDate: z.date(),
 	expirationDate: z.date().nullable().optional(),

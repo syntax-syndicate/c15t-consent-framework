@@ -4,7 +4,7 @@ import { getWithHooks } from '~/pkgs/data-model';
 import type { Where } from '~/pkgs/db-adapters';
 import type { GenericEndpointContext, RegistryContext } from '~/pkgs/types';
 import { validateEntityOutput } from '../definition';
-import type { ConsentPolicy } from './schema';
+import type { ConsentPolicy, PolicyType } from './schema';
 
 export interface FindPolicyParams {
 	domainId?: string;
@@ -240,18 +240,15 @@ export function policyRegistry({ adapter, ...ctx }: RegistryContext) {
 		 * Finds the latest active policy or creates a new one if none exists.
 		 * Uses a database transaction to prevent race conditions in multi-threaded environments.
 		 *
-		 * If multiple active policies with the same name exist, returns the most recent one
+		 * If multiple active policies with the same type exist, returns the most recent one
 		 * based on effectiveDate. When creating a new policy, it assigns version '1.0.0'
 		 * and generates placeholder content with a SHA-256 hash.
 		 *
-		 * @param name - The name of the policy to find/create
+		 * @param type - The type of the policy to find/create
 		 * @returns The policy object
 		 * @throws {Error} If the transaction fails to complete
 		 */
-		findOrCreatePolicy: async (name: string) => {
-			// Normalize name for comparison
-			const normalizedSearchName = name.toLowerCase().trim();
-
+		findOrCreatePolicy: async (type: PolicyType) => {
 			// Use a transaction to prevent race conditions
 			return adapter.transaction({
 				callback: async (txAdapter) => {
@@ -262,27 +259,25 @@ export function policyRegistry({ adapter, ...ctx }: RegistryContext) {
 					});
 
 					// Find latest policy with exact name match directly from database
-					const matchingPolicies = await txAdapter.findMany({
+					const rawLatestPolicy = await txAdapter.findOne({
 						model: 'consentPolicy',
 						where: [
 							{ field: 'isActive', value: true },
 							{
-								field: 'name',
-								value: normalizedSearchName,
-								operator: 'ilike',
+								field: 'type',
+								value: type,
 							},
 						],
 						sortBy: {
 							field: 'effectiveDate',
 							direction: 'desc',
 						},
-						limit: 1,
 					});
 
-					const latestPolicy = matchingPolicies[0]
+					const latestPolicy = rawLatestPolicy
 						? validateEntityOutput(
 								'consentPolicy',
-								matchingPolicies[0],
+								rawLatestPolicy,
 								ctx.options
 							)
 						: null;
@@ -293,11 +288,12 @@ export function policyRegistry({ adapter, ...ctx }: RegistryContext) {
 
 					// Generate policy content and hash
 					const { content: defaultContent, contentHash } =
-						generatePolicyPlaceholder(name, now);
+						generatePolicyPlaceholder(type, now);
 
 					return txRegistry.createConsentPolicy({
 						version: '1.0.0',
-						name: normalizedSearchName,
+						type,
+						name: type,
 						effectiveDate: now,
 						content: defaultContent,
 						contentHash,

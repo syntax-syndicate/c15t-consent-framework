@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { c15tInstance } from '~/core';
 import { memoryAdapter } from '~/pkgs/db-adapters';
-import { ERROR_CODES } from '~/pkgs/results';
-import type { ConsentPolicy } from '~/schema';
+import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
+import type { ConsentPolicy, PolicyType } from '~/schema';
 import type { C15TContext } from '~/types';
 import { setConsent } from '../set-consent';
 
@@ -26,10 +26,7 @@ describe('Consent Endpoints', () => {
 
 	describe('setConsent', () => {
 		// Helper function for common consent data
-		const createConsentData = (
-			type: 'cookie_banner' | 'privacy_policy',
-			overrides = {}
-		) => ({
+		const createConsentData = (type: PolicyType, overrides = {}) => ({
 			type,
 			domain: 'example.com',
 			preferences: {
@@ -108,6 +105,7 @@ describe('Consent Endpoints', () => {
 
 			beforeEach(async () => {
 				policy = await context.registry.createConsentPolicy({
+					type: 'privacy_policy',
 					name: 'Test Privacy Policy',
 					version: '1.0',
 					content: 'Test content',
@@ -162,7 +160,7 @@ describe('Consent Endpoints', () => {
 			it('should validate that subjectId and externalSubjectId map to the same subject', async () => {
 				// Create a subject with external ID
 				const subject = await context.registry.createSubject({
-					externalId: 'test-subject',
+					externalId: 'subject-mapping-1',
 					isIdentified: true,
 					identityProvider: 'test',
 				});
@@ -178,18 +176,18 @@ describe('Consent Endpoints', () => {
 					query: undefined,
 					body: createConsentData('privacy_policy', {
 						subjectId: subject.id,
-						externalSubjectId: 'test-subject',
+						externalSubjectId: 'subject-mapping-1',
 					}),
 				});
 
 				expectValidConsentResponse(response, 'privacy_policy', {
 					subjectId: subject.id,
-					externalSubjectId: 'test-subject',
+					externalSubjectId: 'subject-mapping-1',
 				});
 
 				// Create another subject with different external ID
 				const otherSubject = await context.registry.createSubject({
-					externalId: 'other-subject',
+					externalId: 'subject-mapping-2',
 					isIdentified: true,
 					identityProvider: 'test',
 				});
@@ -206,14 +204,18 @@ describe('Consent Endpoints', () => {
 						query: undefined,
 						body: createConsentData('privacy_policy', {
 							subjectId: subject.id,
-							externalSubjectId: 'other-subject',
+							externalSubjectId: 'subject-mapping-2',
 						}),
 					})
-				).rejects.toMatchObject({
-					name: 'DoubleTieError',
-					code: ERROR_CODES.BAD_REQUEST,
-					status: 400,
-				});
+				).rejects.toMatchObject(
+					new DoubleTieError(
+						'The provided subjectId and externalSubjectId do not match the same subject. Please ensure both identifiers refer to the same subject.',
+						{
+							code: ERROR_CODES.CONFLICT,
+							status: 409,
+						}
+					)
+				);
 			});
 		});
 

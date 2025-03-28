@@ -27,6 +27,7 @@ export const consentPurpose = sqliteTable("consent_purpose", {
 export const consentPolicy = sqliteTable("consent_policy", {
   id: text("id").primaryKey(),
   version: text('version').notNull(),
+  type: text('type').notNull(),
   name: text('name').notNull(),
   effectiveDate: integer('effective_date', { mode: 'timestamp' }).notNull(),
   expirationDate: integer('expiration_date', { mode: 'timestamp' }),

@@ -4,26 +4,15 @@ import { createSDKEndpoint } from '~/pkgs/api-router';
 import type { Adapter } from '~/pkgs/db-adapters';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import type { Consent, ConsentRecord } from '~/schema';
+import { PolicyTypeSchema } from '~/schema/consent-policy';
 import type { C15TContext } from '~/types';
-
-const ConsentType = z.enum([
-	'cookie_banner',
-	'privacy_policy',
-	'dpa',
-	'terms_of_service',
-	'marketing_communications',
-	'age_verification',
-	'other',
-]);
-
-export type ConsentType = z.infer<typeof ConsentType>;
 
 // Base schema for all consent types
 const baseConsentSchema = z.object({
 	subjectId: z.string().optional(),
 	externalSubjectId: z.string().optional(),
 	domain: z.string(),
-	type: ConsentType,
+	type: PolicyTypeSchema,
 	metadata: z.record(z.unknown()).optional(),
 });
 
@@ -35,7 +24,7 @@ const cookieBannerSchema = baseConsentSchema.extend({
 
 // Policy based consent just needs the policy ID
 const policyBasedSchema = baseConsentSchema.extend({
-	type: z.enum(['privacy_policy', 'dpa', 'terms_of_service']),
+	type: z.enum(['privacy_policy', 'dpa', 'terms_and_conditions']),
 	policyId: z.string().optional(),
 	preferences: z.record(z.boolean()).optional(),
 });
@@ -66,7 +55,7 @@ export interface SetConsentResponse {
  * - cookie_banner: For cookie preferences
  * - privacy_policy: For privacy policy acceptance
  * - dpa: For data processing agreement acceptance
- * - terms_of_service: For terms of service acceptance
+ * - terms_and_conditions: For terms and conditions acceptance
  * - marketing_communications: For marketing preferences
  * - age_verification: For age verification
  * - other: For other types of consent
@@ -177,9 +166,7 @@ export const setConsent = createSDKEndpoint(
 					);
 				}
 			} else {
-				const policy = await registry.findOrCreatePolicy(
-					type.replace('_', ' ')
-				);
+				const policy = await registry.findOrCreatePolicy(type);
 				if (!policy) {
 					throw new DoubleTieError(
 						'Failed to create or find the required policy. Please try again later or contact support if the issue persists.',
@@ -232,6 +219,8 @@ export const setConsent = createSDKEndpoint(
 							status: 'active',
 							isActive: true,
 							givenAt: now,
+							ipAddress: ctx.context.ipAddress || 'unknown',
+							agent: ctx.context.userAgent || 'unknown',
 							history: [],
 						},
 					})) as unknown as Consent;
@@ -261,6 +250,8 @@ export const setConsent = createSDKEndpoint(
 								type,
 							},
 							timestamp: now,
+							ipAddress: ctx.context.ipAddress || 'unknown',
+							agent: ctx.context.userAgent || 'unknown',
 						},
 					});
 

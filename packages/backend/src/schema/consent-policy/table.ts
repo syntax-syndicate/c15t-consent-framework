@@ -57,6 +57,15 @@ export function getConsentPolicyTable(
 			},
 
 			/**
+			 * Type of the policy
+			 */
+			type: {
+				type: 'string',
+				required: true,
+				fieldName: consentPolicyConfig?.fields?.type || 'type',
+			},
+
+			/**
 			 * Human-readable name of the policy
 			 */
 			name: {

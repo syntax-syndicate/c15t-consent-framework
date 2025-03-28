@@ -1,3 +1,4 @@
+import { ZodError } from 'node_modules/zod/lib/ZodError';
 import type { PluginSchema } from '~/pkgs/data-model';
 import type { C15TOptions } from '~/types';
 import { getAuditLogTable } from './audit-log/table';
@@ -188,6 +189,39 @@ export function validateEntityOutput<TableName extends keyof C15TDBSchema>(
 		throw new Error(`Table ${tableName} not found`);
 	}
 
+	// Pre-process data: Convert date strings to Date objects
+	const processedData = { ...data };
+	for (const [field, def] of Object.entries(table.fields)) {
+		if (def.type === 'date' && typeof processedData[field] === 'string') {
+			processedData[field] = new Date(processedData[field] as string);
+		}
+	}
+
+	// This is useful for debugging validation issues
+	// console.log('[validateEntityOutput] Debug data:', {
+	// 	fields: Object.fromEntries(
+	// 		Object.entries(table.fields).map(([key, field]) => [
+	// 			key,
+	// 			{
+	// 				type: field.type,
+	// 				required: field.required,
+	// 				value: processedData[field.fieldName as keyof typeof processedData],
+	// 			},
+	// 		])
+	// 	),
+	// });
+
 	// Validate and return data using Zod schema
-	return table.schema.parse(data) as EntityOutputFields<TableName>;
+	try {
+		return table.schema.parse(processedData) as EntityOutputFields<TableName>;
+	} catch (error) {
+		if (error instanceof ZodError) {
+			console.log(
+				'[validateEntityOutput] Validation failed:',
+				table,
+				error.issues
+			);
+		}
+		throw error;
+	}
 }
