@@ -10,7 +10,7 @@ import { type c15tClientOptions, createConsentClient } from '@c15t/react';
  */
 export const c15tClient = createConsentClient({
 	baseURL:
-		'https://consent-io-us-east-docs-x.consent-ef4.workers.dev/api/c15t',
+		'https://consent-io-us-east-docs-x.consent-ef4.workers.dev/api/c15t/',
 	defaultPreferences: {
 		analytics: true,
 		marketing: true,
