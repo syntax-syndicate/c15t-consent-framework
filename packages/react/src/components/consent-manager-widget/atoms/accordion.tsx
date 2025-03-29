@@ -1,36 +1,18 @@
+import type { AllConsentNames, ConsentType } from 'c15t';
+
 import {
 	type ComponentPropsWithoutRef,
 	type ComponentRef,
 	type Ref,
 	forwardRef,
+	useCallback,
 } from 'react';
 import { Box, type BoxProps } from '~/components/shared/primitives/box';
 import * as RadixAccordion from '~/components/shared/ui/accordion';
 import * as RadixSwitch from '~/components/shared/ui/switch';
-import { useTranslations } from '../../../hooks/use-translations';
+import { useConsentManager } from '~/hooks/use-consent-manager';
+import { useTranslations } from '~/hooks/use-translations';
 import styles from '../consent-manager-widget.module.css';
-
-import type { AllConsentNames, ConsentType } from 'c15t';
-
-/**
- * Props for the consent accordion component
- */
-export interface ConsentAccordionProps {
-	/**
-	 * Function to get the displayed consent types
-	 */
-	getDisplayedConsents: () => ConsentType[];
-
-	/**
-	 * Record of consent values by name
-	 */
-	consents: Record<string, boolean>;
-
-	/**
-	 * Function to update a specific consent
-	 */
-	setConsent: (name: AllConsentNames, value: boolean) => void;
-}
 
 /**
  * Accordion Trigger Component
@@ -79,17 +61,22 @@ const ConsentManagerWidgetSwitch = RadixSwitch.Root;
  * </ConsentManagerWidgetAccordion>
  * ```
  */
-const ConsentManagerWidgetAccordionItems = ({
-	getDisplayedConsents,
-	consents,
-	setConsent,
-}: ConsentAccordionProps) => {
-	const { consentTypes } = useTranslations();
+const ConsentManagerWidgetAccordionItems = () => {
+	const { consents, setConsent, getDisplayedConsents } = useConsentManager();
+	const handleConsentChange = useCallback(
+		(name: AllConsentNames, checked: boolean) => {
+			setConsent(name, checked);
+		},
+		[setConsent]
+	);
 
-	function formatConsentName(name: string): string {
-		return name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
+	function formatConsentName(name: AllConsentNames) {
+		return name
+			.replace(/_/g, ' ')
+			.replace(/\b\w/g, (c: string) => c.toUpperCase());
 	}
 
+	const { consentTypes } = useTranslations();
 	return getDisplayedConsents().map((consent: ConsentType) => (
 		<ConsentManagerWidgetAccordionItem
 			value={consent.name}
@@ -119,7 +106,7 @@ const ConsentManagerWidgetAccordionItems = ({
 					onKeyUp={(e) => e.stopPropagation()}
 					onKeyDown={(e) => e.stopPropagation()}
 					onCheckedChange={(checked) =>
-						setConsent(consent.name as AllConsentNames, checked)
+						handleConsentChange(consent.name, checked)
 					}
 					disabled={consent.disabled}
 					theme={{
@@ -191,46 +178,3 @@ export {
 	AccordionItems,
 	AccordionItem,
 };
-export function ConsentAccordion({
-	getDisplayedConsents,
-	consents,
-	setConsent,
-}: ConsentAccordionProps) {
-	// Get translations
-	const translations = useTranslations(); // No argument needed
-	const { consentTypes } = translations;
-
-	// Format consent name helper
-	const formatConsentName = (name: string): string => {
-		return name.charAt(0).toUpperCase() + name.slice(1).replace(/-/g, ' ');
-	};
-
-	return (
-		<>
-			{getDisplayedConsents().map((consent: ConsentType) => (
-				<div key={consent.name} className="consent-accordion-item">
-					<div className="consent-header">
-						<h3>
-							{consentTypes[consent.name]?.title ??
-								formatConsentName(consent.name)}
-						</h3>
-						<label className="toggle-switch">
-							<input
-								type="checkbox"
-								checked={consents[consent.name] || false}
-								onChange={(e) =>
-									setConsent(consent.name as AllConsentNames, e.target.checked)
-								}
-								disabled={consent.disabled}
-							/>
-							<span className="slider round" />
-						</label>
-					</div>
-					<div className="consent-description">
-						{consentTypes[consent.name]?.description ?? consent.description}
-					</div>
-				</div>
-			))}
-		</>
-	);
-}
