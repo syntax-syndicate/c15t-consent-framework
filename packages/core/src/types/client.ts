@@ -131,7 +131,11 @@ export interface c15tClientOptions {
  * };
  * ```
  */
-export interface FetchOptions<ResponseType = unknown, BodyType = unknown, QueryType = unknown> {
+export interface FetchOptions<
+	ResponseType = unknown,
+	BodyType = unknown,
+	QueryType = unknown,
+> {
 	/**
 	 * HTTP method for the request.
 	 *

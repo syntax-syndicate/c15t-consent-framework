@@ -55,7 +55,7 @@ export const ConsentButton = forwardRef<
 		},
 		ref
 	) => {
-		const { saveConsents, setShowPopup, setIsPrivacyDialogOpen } =
+		const { saveConsents, setShowPopup, setIsPrivacyDialogOpen, client } =
 			useConsentManager();
 		const { noStyle: contextNoStyle } = useTheme();
 
@@ -75,15 +75,57 @@ export const ConsentButton = forwardRef<
 
 		const buttonClick = useCallback(() => {
 			switch (action) {
-				case 'accept-consent':
+				case 'accept-consent': {
 					saveConsents('all');
+					client?.setConsent({
+						body: {
+							type: 'cookie_banner',
+							domain: window.location.hostname,
+							preferences: {
+								analytics: true,
+								marketing: true,
+								necessary: true,
+								functional: true,
+								experience: true,
+							},
+						},
+					});
 					break;
-				case 'reject-consent':
+				}
+				case 'reject-consent': {
 					saveConsents('necessary');
+					client?.setConsent({
+						body: {
+							type: 'cookie_banner',
+							domain: window.location.hostname,
+							preferences: {
+								analytics: false,
+								marketing: false,
+								necessary: true,
+								functional: false,
+								experience: false,
+							},
+						},
+					});
 					break;
-				case 'custom-consent':
+				}
+				case 'custom-consent': {
 					saveConsents('custom');
+					client?.setConsent({
+						body: {
+							type: 'cookie_banner',
+							domain: window.location.hostname,
+							preferences: {
+								analytics: true,
+								marketing: true,
+								necessary: true,
+								functional: true,
+								experience: true,
+							},
+						},
+					});
 					break;
+				}
 				case 'open-consent-dialog': {
 					setIsPrivacyDialogOpen(true);
 					setShowPopup(false, true);
@@ -109,6 +151,7 @@ export const ConsentButton = forwardRef<
 			setIsPrivacyDialogOpen,
 			setShowPopup,
 			action,
+			client?.setConsent,
 		]);
 
 		const Comp = asChild ? Slot : 'button';

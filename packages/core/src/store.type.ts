@@ -3,8 +3,21 @@
  * Defines the core types and interfaces for the consent management store.
  */
 
-import type { ConsentState, AllConsentNames, ComplianceRegion, ComplianceSettings, Callbacks, LocationInfo, JurisdictionInfo, PrivacySettings, TranslationConfig, ConsentType, CallbackFunction, ConsentBannerResponse, consentTypes } from "./types";
-
+import type {
+	AllConsentNames,
+	CallbackFunction,
+	Callbacks,
+	ComplianceRegion,
+	ComplianceSettings,
+	ConsentBannerResponse,
+	ConsentState,
+	ConsentType,
+	JurisdictionInfo,
+	LocationInfo,
+	PrivacySettings,
+	TranslationConfig,
+	consentTypes,
+} from './types';
 
 /**
  * Core state and methods interface for the privacy consent management store.

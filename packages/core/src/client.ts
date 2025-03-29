@@ -1,4 +1,3 @@
-
 import type { FetchOptions, ResponseContext, c15tClientOptions } from './types';
 
 import type {
@@ -308,7 +307,6 @@ export class c15tClient {
 			};
 		}
 	}
-
 
 	/**
 	 * Makes a custom API request to any endpoint.
