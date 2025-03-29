@@ -205,7 +205,7 @@ export class c15tClient {
 					...this.headers,
 					...options.headers,
 				},
-        mode: "no-cors"
+				mode: 'no-cors',
 				// credentials: 'include', // Include cookies in requests
 				// mode: 'cors', // Enable CORS
 			};
