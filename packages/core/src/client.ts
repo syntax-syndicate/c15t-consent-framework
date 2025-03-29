@@ -1,15 +1,13 @@
-/**
- * @packageDocumentation
- * Client for interacting with the c15t consent management API.
- */
+
+import type { FetchOptions, ResponseContext, c15tClientOptions } from './types';
 
 import type {
-	ConsentBannerResponse,
-	ConsentPurpose,
-	FetchOptions,
-	ResponseContext,
-	c15tClientOptions,
-} from './types';
+	SetConsentRequest,
+	SetConsentResponse,
+	ShowConsentBannerResponse,
+	VerifyConsentRequest,
+	VerifyConsentResponse,
+} from '@c15t/backend';
 
 /**
  * Default consent banner API URL
@@ -44,6 +42,16 @@ const API_ENDPOINTS = {
 	 * Path for listing consent purposes
 	 */
 	LIST_PURPOSES: '/list-purposes',
+
+	/**
+	 * Path for setting consent
+	 */
+	SET_CONSENT: '/consent/set',
+
+	/**
+	 * Path for verifying consent
+	 */
+	VERIFY_CONSENT: '/consent/verify',
 };
 
 /**
@@ -160,9 +168,9 @@ export class c15tClient {
 	 * @throws Will throw an error if options.throw is true and the request fails
 	 * @internal This method is not intended to be used directly, use the public API methods instead
 	 */
-	private async fetcher<ResponseType>(
+	private async fetcher<ResponseType, BodyType = unknown, QueryType = unknown>(
 		path: string,
-		options: FetchOptions<ResponseType> = {}
+		options: FetchOptions<ResponseType, BodyType, QueryType> = {}
 	): Promise<ResponseContext<ResponseType>> {
 		try {
 			// Use the resolveUrl method instead of direct URL construction
@@ -301,44 +309,6 @@ export class c15tClient {
 		}
 	}
 
-	/**
-	 * Lists all available consent purposes.
-	 *
-	 * This method retrieves all consent purposes configured in the system,
-	 * including their IDs, names, descriptions, and whether they are required
-	 * or optional.
-	 *
-	 * @throws Will throw an error if options.throw is true and the request fails
-	 *
-	 * @example
-	 * ```typescript
-	 * const { data, error } = await client.listPurposes();
-	 *
-	 * if (error) {
-	 *   console.error('Failed to fetch purposes:', error.message);
-	 *   return;
-	 * }
-	 *
-	 * if (data) {
-	 *   // Display available consent purposes to the subject
-	 *   data.forEach(consentPurpose => {
-	 *     console.log(`${consentPurpose.name}: ${consentPurpose.description}`);
-	 *     console.log(`Required: ${consentPurpose.required}`);
-	 *   });
-	 * }
-	 * ```
-	 *
-	 * @param options - Optional fetch configuration options
-	 * @returns Response context containing the list of consent purposes if successful
-	 */
-	async listPurposes(
-		options?: FetchOptions<ConsentPurpose[]>
-	): Promise<ResponseContext<ConsentPurpose[]>> {
-		return this.fetcher<ConsentPurpose[]>(API_ENDPOINTS.LIST_PURPOSES, {
-			method: 'GET',
-			...options,
-		});
-	}
 
 	/**
 	 * Makes a custom API request to any endpoint.
@@ -379,11 +349,11 @@ export class c15tClient {
 	 * });
 	 * ```
 	 */
-	async $fetch<ResponseType>(
+	async $fetch<ResponseType, BodyType, QueryType>(
 		path: string,
-		options?: FetchOptions<ResponseType>
+		options?: FetchOptions<ResponseType, BodyType, QueryType>
 	): Promise<ResponseContext<ResponseType>> {
-		return this.fetcher<ResponseType>(path, options);
+		return this.fetcher<ResponseType, BodyType, QueryType>(path, options);
 	}
 
 	/**
@@ -411,12 +381,104 @@ export class c15tClient {
 	 * @returns Response context containing the consent banner information if successful
 	 */
 	async showConsentBanner(
-		options?: FetchOptions<ConsentBannerResponse>
-	): Promise<ResponseContext<ConsentBannerResponse>> {
-		return this.fetcher<ConsentBannerResponse>(
+		options?: FetchOptions<ShowConsentBannerResponse>
+	): Promise<ResponseContext<ShowConsentBannerResponse>> {
+		return this.fetcher<ShowConsentBannerResponse>(
 			API_ENDPOINTS.SHOW_CONSENT_BANNER,
 			{
 				method: 'GET',
+				...options,
+			}
+		);
+	}
+
+	/**
+	 * Sets consent preferences for a subject.
+	 *
+	 * This method allows setting different types of consent including cookie preferences,
+	 * privacy policy acceptance, marketing preferences, etc.
+	 *
+	 * @example
+	 * ```typescript
+	 * // Set cookie banner preferences
+	 * const { data } = await client.setConsent({
+	 *   type: 'cookie_banner',
+	 *   domain: 'example.com',
+	 *   preferences: {
+	 *     analytics: true,
+	 *     marketing: false,
+	 *     necessary: true
+	 *   }
+	 * });
+	 *
+	 * // Accept privacy policy
+	 * const { data } = await client.setConsent({
+	 *   type: 'privacy_policy',
+	 *   domain: 'example.com',
+	 *   policyId: 'pol_xyz789',
+	 *   metadata: {
+	 *     source: 'account_creation',
+	 *     acceptanceMethod: 'checkbox'
+	 *   }
+	 * });
+	 * ```
+	 *
+	 * @param request - The consent request data
+	 * @param options - Optional fetch configuration
+	 * @returns Response containing the created consent record
+	 */
+	async setConsent(
+		options?: FetchOptions<SetConsentResponse, SetConsentRequest>
+	): Promise<ResponseContext<SetConsentResponse>> {
+		return this.fetcher<SetConsentResponse, SetConsentRequest>(
+			API_ENDPOINTS.SET_CONSENT,
+			{
+				method: 'POST',
+				...options,
+			}
+		);
+	}
+
+	/**
+	 * Verifies if valid consent exists for a given subject, domain, and consent type.
+	 *
+	 * This method checks if the subject has given valid consent for specific purposes
+	 * or policies. It can verify both cookie banner consent and policy-based consent.
+	 *
+	 * @example
+	 * ```typescript
+	 * // Verify cookie banner consent
+	 * const { data } = await client.verifyConsent({
+	 *   type: 'cookie_banner',
+	 *   domain: 'example.com',
+	 *   preferences: ['marketing', 'analytics']
+	 * });
+	 *
+	 * if (data?.isValid) {
+	 *   console.log('Consent is valid');
+	 * } else {
+	 *   console.log('Consent is invalid:', data?.reasons);
+	 * }
+	 *
+	 * // Verify privacy policy consent
+	 * const { data } = await client.verifyConsent({
+	 *   type: 'privacy_policy',
+	 *   domain: 'example.com',
+	 *   policyId: 'pol_xyz789'
+	 * });
+	 * ```
+	 *
+	 * @param request - The verify consent request data
+	 * @param options - Optional fetch configuration
+	 * @returns Response indicating if the consent is valid and any failure reasons
+	 */
+	async verifyConsent(
+		options?: FetchOptions<VerifyConsentResponse, VerifyConsentRequest>
+	): Promise<ResponseContext<VerifyConsentResponse>> {
+		return this.fetcher<VerifyConsentResponse, VerifyConsentRequest>(
+			API_ENDPOINTS.VERIFY_CONSENT,
+			{
+				method: 'POST',
 				...options,
 			}
 		);

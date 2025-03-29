@@ -178,14 +178,14 @@ import { createConsentManagerStore, createConsentClient } from 'https://cdn.skyp
 
 // Configuration for the consent manager
 const config = {
-    client: createConsentManagerStore({
+    client: {
         baseURL: '/api/c15t-demo',
         defaultPreferences: {
             analytics: true,
             marketing: true,
             preferences: true,
         }
-}),
+    },
     store: {
         namespace: 'c15tExample',
         trackingBlockerConfig: {
@@ -194,7 +194,8 @@ const config = {
     }
 };
 
-// Create the consent manager store with configuration
+// Create the client and store
+const client = createConsentClient(config.client);
 const consentManager = createConsentManagerStore(config.store.namespace, {
     apiBaseURL: config.client.baseURL,
     trackingBlockerConfig: config.store.trackingBlockerConfig
@@ -211,16 +212,50 @@ if (consentManager.getState().showPopup) {
 }
 
 // Handle accept all
-acceptButton.addEventListener('click', () => {
+acceptButton.addEventListener('click', async () => {
     console.log('accept all');
-    consentManager.getState().saveConsents('all');
+    const state = consentManager.getState();
+    state.saveConsents('all');
+    
+    try {
+        const { data } = await client.setConsent({
+            type: 'cookie_banner',
+            domain: window.location.hostname,
+            preferences: state.consents,
+            metadata: {
+                source: 'cookie_banner',
+                acceptanceMethod: 'accept_all_button'
+            }
+        });
+        console.log('Consent saved:', data);
+    } catch (error) {
+        console.error('Failed to save consent:', error);
+    }
+    
     cookieBanner.classList.remove('show');
 });
 
 // Handle reject all
-rejectButton.addEventListener('click', () => {
+rejectButton.addEventListener('click', async () => {
     console.log('reject all');
-    consentManager.getState().saveConsents('necessary');
+    const state = consentManager.getState();
+    state.saveConsents('necessary');
+    
+    try {
+        const { data } = await client.setConsent({
+            type: 'cookie_banner',
+            domain: window.location.hostname,
+            preferences: state.consents,
+            metadata: {
+                source: 'cookie_banner',
+                acceptanceMethod: 'reject_all_button'
+            }
+        });
+        console.log('Consent saved:', data);
+    } catch (error) {
+        console.error('Failed to save consent:', error);
+    }
+    
     cookieBanner.classList.remove('show');
 });
 `,

@@ -15,12 +15,11 @@ import { createTrackingBlocker } from './libs/tracking-blocker';
 import type { TrackingBlockerConfig } from './libs/tracking-blocker';
 import { initialState } from './store.initial-state';
 import type { PrivacyConsentState } from './store.type';
-import {
-	type ConsentBannerResponse,
-	type ConsentState,
-	type TranslationConfig,
-	consentTypes,
-} from './types';
+
+import type { ShowConsentBannerResponse } from '@c15t/backend';
+import type { ConsentState } from './types/compliance';
+import { consentTypes } from './types/gdpr';
+import type { TranslationConfig } from './types/translations';
 
 /** Storage key for persisting consent data in localStorage */
 const STORAGE_KEY = 'privacy-consent-storage';
@@ -264,13 +263,7 @@ export const createConsentManagerStore = (
 		 * 5. Triggers callbacks
 		 */
 		saveConsents: (type) => {
-			const {
-				callbacks,
-				updateConsentMode,
-				consents,
-				consentTypes,
-				includeNonDisplayedConsents,
-			} = get();
+			const { callbacks, updateConsentMode, consents, consentTypes } = get();
 			const newConsents = { ...consents };
 			if (type === 'all') {
 				for (const consent of consentTypes) {
@@ -405,7 +398,7 @@ export const createConsentManagerStore = (
 		 */
 		fetchConsentBannerInfo: async (
 			url?: string
-		): Promise<ConsentBannerResponse | undefined> => {
+		): Promise<ShowConsentBannerResponse | undefined> => {
 			// Skip if not in browser environment
 			if (typeof window === 'undefined') {
 				return undefined;

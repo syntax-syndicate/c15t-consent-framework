@@ -1,3 +1,8 @@
+/**
+ * @packageDocumentation
+ * Main entry point for the c15t consent management system.
+ */
+
 // Re-export store
 export { createConsentManagerStore } from './store';
 export type { PrivacyConsentState } from './store.type';
@@ -8,33 +13,8 @@ export * from './libs/consent-utils';
 export { createTrackingBlocker } from './libs/tracking-blocker';
 export type { TrackingBlockerConfig } from './libs/tracking-blocker';
 
-// Re-export types and constants
-export { consentTypes } from './types';
-export type {
-	CallbackFunction,
-	Callbacks,
-	AllConsentNames,
-	ConsentType,
-	ConsentState,
-	ComplianceRegion,
-	ComplianceSettings,
-	PrivacySettings,
-	HasConsentedProps,
-	NamespaceProps,
-	TranslationConfig,
-	Translations,
-	CookieBannerTranslations,
-	ConsentManagerDialogTranslations,
-	ConsentManagerWidgetTranslations,
-	ConsentTypeTranslations,
-	ConsentTypesTranslations,
-	LocationInfo,
-	JurisdictionInfo,
-	ConsentBannerResponse,
-} from './types';
-
 // Export the client
-export { createConsentClient, c15tClient } from './client';
+export { c15tClient, createConsentClient } from './client';
 
 // Re-export client types
 export type {
