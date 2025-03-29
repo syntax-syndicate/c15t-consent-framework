@@ -191,7 +191,6 @@ export {
 	AccordionItems,
 	AccordionItem,
 };
-
 export function ConsentAccordion({
 	getDisplayedConsents,
 	consents,
@@ -235,3 +234,4 @@ export function ConsentAccordion({
 		</>
 	);
 }
+

@@ -27,11 +27,6 @@
 			"import": "./dist/integrations/next.js",
 			"require": "./dist/integrations/next.cjs"
 		},
-		"./integrations/react": {
-			"types": "./dist/integrations/react.d.ts",
-			"import": "./dist/integrations/react.js",
-			"require": "./dist/integrations/react.cjs"
-		},
 		"./pkgs/data-model/fields": {
 			"types": "./dist/pkgs/data-model/fields/index.d.ts",
 			"import": "./dist/pkgs/data-model/fields/index.js",
