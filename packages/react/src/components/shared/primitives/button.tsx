@@ -55,8 +55,13 @@ export const ConsentButton = forwardRef<
 		},
 		ref
 	) => {
-		const { saveConsents, setShowPopup, setIsPrivacyDialogOpen, client } =
-			useConsentManager();
+		const {
+			saveConsents,
+			setShowPopup,
+			setIsPrivacyDialogOpen,
+			client,
+			consents,
+		} = useConsentManager();
 		const { noStyle: contextNoStyle } = useTheme();
 
 		const buttonStyle = useStyles(themeKey ?? 'button', {
@@ -88,6 +93,10 @@ export const ConsentButton = forwardRef<
 								functional: true,
 								experience: true,
 							},
+							metadata: {
+								source: 'cookie_banner',
+								acceptanceMethod: 'accept_all_button',
+							},
 						},
 					});
 					break;
@@ -105,22 +114,29 @@ export const ConsentButton = forwardRef<
 								functional: false,
 								experience: false,
 							},
+							metadata: {
+								source: 'cookie_banner',
+								acceptanceMethod: 'reject_all_button',
+							},
 						},
 					});
 					break;
 				}
 				case 'custom-consent': {
+					// Save consents first to ensure store is updated
 					saveConsents('custom');
+
 					client?.setConsent({
 						body: {
 							type: 'cookie_banner',
 							domain: window.location.hostname,
 							preferences: {
-								analytics: true,
-								marketing: true,
-								necessary: true,
-								functional: true,
-								experience: true,
+								...consents,
+								necessary: true, // Always ensure necessary is true
+							},
+							metadata: {
+								source: 'consent_widget',
+								acceptanceMethod: 'save_preferences_button',
 							},
 						},
 					});
@@ -152,6 +168,7 @@ export const ConsentButton = forwardRef<
 			setShowPopup,
 			action,
 			client?.setConsent,
+			consents,
 		]);
 
 		const Comp = asChild ? Slot : 'button';
