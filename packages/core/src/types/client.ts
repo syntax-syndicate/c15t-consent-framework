@@ -51,7 +51,7 @@ export interface c15tClientOptions {
 	 * @example 'consent'
 	 */
 	basePath?: string;
-  
+
 	/**
 	 * Default request headers to include with all API requests.
 	 *
