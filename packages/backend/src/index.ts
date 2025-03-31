@@ -24,7 +24,7 @@ export type {
 	ShowConsentBannerResponse,
 	VerifyConsentRequest,
 	VerifyConsentResponse,
-} from './routes';
+} from './routes-old';
 
 //------------------------------------------------------------------------------
 // Plugins

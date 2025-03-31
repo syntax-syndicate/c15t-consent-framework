@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { C15T_ERROR_CODES } from '~/error-codes';
-import { createSDKEndpoint } from '~/pkgs/api-router';
+import { createSDKEndpoint } from '~/pkgs/api-router-old';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
 import { validateEntityOutput } from '~/schema/definition';

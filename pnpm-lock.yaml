@@ -381,6 +381,9 @@ importers:
       drizzle-orm:
         specifier: ^0.40.0
         version: 0.40.0(@cloudflare/workers-types@4.20250303.0)(@libsql/client@0.14.0)(@opentelemetry/api@1.9.0)(@prisma/client@6.5.0(prisma@6.4.1(typescript@5.8.2))(typescript@5.8.2))(@types/better-sqlite3@7.6.12)(@types/pg@8.11.11)(better-sqlite3@11.8.1)(kysely@0.27.6)(mysql2@3.13.0)(pg@8.14.0)(prisma@6.4.1(typescript@5.8.2))
+      h3:
+        specifier: ^1.15.1
+        version: 1.15.1
       kysely:
         specifier: ^0.27.6
         version: 0.27.6

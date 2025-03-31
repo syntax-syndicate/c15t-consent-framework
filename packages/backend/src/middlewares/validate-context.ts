@@ -1,4 +1,4 @@
-import { createSDKMiddleware } from '~/pkgs/api-router';
+import { createSDKMiddleware } from '~/pkgs/api-router-old';
 import type { Adapter } from '~/pkgs/db-adapters';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import type { C15TContext, C15TPlugin } from '~/types';

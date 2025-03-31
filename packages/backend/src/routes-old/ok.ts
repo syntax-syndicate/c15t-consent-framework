@@ -1,4 +1,4 @@
-import { HIDE_METADATA, createSDKEndpoint } from '~/pkgs/api-router';
+import { HIDE_METADATA, createSDKEndpoint } from '~/pkgs/api-router-old';
 
 export const ok = createSDKEndpoint(
 	'/ok',

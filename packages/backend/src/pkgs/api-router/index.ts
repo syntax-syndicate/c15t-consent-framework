@@ -1,69 +1,33 @@
-/**
- * # DoubleTie API Router Package
- *
- * A flexible, type-safe API routing system for TypeScript applications built on the better-call library.
- * This package provides utilities for creating, configuring, and consuming API endpoints
- * while maintaining separation from specific route implementations.
- *
- * ## Key Features
- *
- * - **Type-safe endpoint definitions**: Strong TypeScript typing for request/response handling
- * - **Middleware support**: Pre/post request processing with powerful hook system
- * - **Plugin architecture**: Extensible system for adding custom functionality
- * - **Error handling**: Standardized error management with detailed logging
- * - **IP address tracking**: Utilities for client IP detection with privacy controls
- *
- * ## Example Usage
- *
- * ```typescript
- * import {
- *   createSDKEndpoint,
- *   createSDKMiddleware,
- *   createApiRouter,
- *   toEndpoints,
- *   wildcardMatch
- * } from '@doubletie/api-router';
- *
- * // Create an endpoint
- * const getUserEndpoint = createSDKEndpoint(async (context) => {
- *   const { userId } = context.params;
- *   const user = await getUserById(userId);
- *   return { user };
- * });
- *
- * // Create a middleware
- * const authMiddleware = createSDKMiddleware(async (context) => {
- *   const token = context.headers.get('Authorization');
- *   if (!token) {
- *     throw new APIError({
- *       message: 'Unauthorized',
- *       status: 'UNAUTHORIZED'
- *     });
- *   }
- *   return { context: { user: await validateToken(token) } };
- * });
- *
- * // Setup router
- * const router = createApiRouter(context, options, {
- *   getUser: getUserEndpoint
- * }, healthCheckEndpoint, [
- *   { path: '/users/**', middleware: authMiddleware }
- * ]);
- * ```
- *
- * @packageDocumentation
- */
+import { createApp, createRouter, toWebHandler } from 'h3';
+import { routes } from '~/routes';
+import { getIp } from './utils/ip';
+import type { C15TOptions } from '~/types';
+interface RouterProps {
+	options: C15TOptions;
+}
 
-// Core functionality - endpoint and middleware creation, router
-export * from './core';
+export function createApiHandler({ options }: RouterProps) {
+	// Create an app instance
+	const app = createApp({
+		onRequest(event) {
+			// Set the context
+			event.context.ipAddress = getIp(event.headers, options);
+			event.context.userAgent = event.node.req.headers['user-agent'] || null;
 
-// Hook system for request/response processing
-export * from './hooks';
+			console.log(event.context);
+		},
+	});
 
-// Endpoint conversion utilities
-export * from './endpoints';
+	// Create a new router and register it in app
+	const router = createRouter();
+	app.use(router);
 
-// Utility functions
-export * from './utils';
+	// Initialize routes
+	for (const route of routes) {
+		router[route.method](route.path, route.handler);
+	}
 
-export type { Endpoint } from 'better-call';
+	const handler = toWebHandler(app);
+
+	return { handler };
+}

@@ -1,4 +1,4 @@
-import { createSDKMiddleware, wildcardMatch } from '~/pkgs/api-router';
+import { createSDKMiddleware, wildcardMatch } from '~/pkgs/api-router-old';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import type { GenericEndpointContext } from '~/pkgs/types';
 import { getHost, getOrigin, getProtocol } from '~/pkgs/utils/url';

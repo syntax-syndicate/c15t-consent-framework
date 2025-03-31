@@ -1,5 +1,4 @@
-import { defineEventHandler } from 'h3';
-import type { Route } from './types';
+import { createSDKEndpoint } from '~/pkgs/api-router-old';
 
 /**
  * Response type for the status endpoint
@@ -42,22 +41,22 @@ export interface StatusResponse {
  * }
  * ```
  */
-export const status: Route = {
-	path: '/status',
-	method: 'get',
-	handler: defineEventHandler({
-		handler: async (event) => {
-			const response: StatusResponse = {
-				status: 'ok',
-				version: '2.0.0',
-				timestamp: new Date().toISOString(),
-				storage: {
-					type: event.context.adapter?.id ?? 'Unavailable',
-					available: !!event.context.adapter,
-				},
-			};
+export const status = createSDKEndpoint(
+	'/status',
+	{
+		method: 'GET',
+	},
+	async (ctx) => {
+		const response: StatusResponse = {
+			status: 'ok',
+			version: '1.0.0',
+			timestamp: new Date().toISOString(),
+			storage: {
+				type: ctx.context?.adapter?.id ?? 'Unavailable',
+				available: !!ctx.context?.adapter,
+			},
+		};
 
-			return response;
-		},
-	}),
-};
+		return response;
+	}
+);

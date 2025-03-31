@@ -1,4 +1,4 @@
-import type { DoubleTieMiddleware } from '~/pkgs/api-router';
+import type { DoubleTieMiddleware } from '~/pkgs/api-router-old';
 import type { DatabaseHook, EntityName } from '~/pkgs/data-model';
 import type { DatabaseConfiguration } from '~/pkgs/db-adapters/adapters/kysely-adapter/types';
 import type { Logger } from '~/pkgs/logger';

@@ -4,7 +4,7 @@
  * Defines base API types for the DoubleTie framework that can be extended by
  * specific implementations like c15t.
  */
-import type { Endpoint } from '~/pkgs/api-router';
+import type { Endpoint } from '~/pkgs/api-router-old';
 
 /**
  * Filter action methods from an object type

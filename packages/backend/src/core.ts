@@ -12,6 +12,7 @@ import { getBaseURL } from '~/pkgs/utils';
 import type { C15TContext, C15TOptions, C15TPlugin } from '~/types';
 import { init } from './init';
 import type { FilterActions } from './pkgs/types';
+import { createApiHandler } from './pkgs/api-router';
 
 /**
  * Interface representing a configured c15t consent management instance.
@@ -191,7 +192,7 @@ export const c15tInstance = <
 			];
 
 			try {
-				const { handler } = router(ctx, options);
+				const { handler } = createApiHandler({ options });
 
 				// Use tryCatchAsync with a function that returns a promise
 				return tryCatchAsync(

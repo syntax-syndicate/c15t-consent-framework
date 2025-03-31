@@ -1,4 +1,4 @@
-import { HIDE_METADATA, createSDKEndpoint } from '~/pkgs/api-router';
+import { HIDE_METADATA, createSDKEndpoint } from '~/pkgs/api-router-old';
 
 function sanitize(input: string): string {
 	return input

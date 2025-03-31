@@ -1,4 +1,4 @@
-import type { Endpoint } from '~/pkgs/api-router';
+import type { Endpoint } from '~/pkgs/api-router-old';
 import type { DoubleTiePlugin, DoubleTiePluginSchema } from '~/pkgs/types';
 import type { DeepPartial } from '~/pkgs/types/helper';
 import type { C15TContext } from './context';
