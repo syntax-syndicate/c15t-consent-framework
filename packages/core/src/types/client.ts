@@ -44,6 +44,15 @@ export interface c15tClientOptions {
 	baseURL: string;
 
 	/**
+	 * Base path for API endpoints.
+	 *
+	 * The path will be appended to the base URL without a leading slash.
+	 *
+	 * @example 'consent'
+	 */
+	basePath?: string;
+  
+	/**
 	 * Default request headers to include with all API requests.
 	 *
 	 * Common headers include API keys, authorization tokens, and content type.

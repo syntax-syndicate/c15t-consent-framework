@@ -196,8 +196,7 @@ const config = {
 
 // Create the client and store
 const client = createConsentClient(config.client);
-const consentManager = createConsentManagerStore(config.store.namespace, {
-    apiBaseURL: config.client.baseURL,
+const consentManager = createConsentManagerStore(client, config.store.namespace, {
     trackingBlockerConfig: config.store.trackingBlockerConfig
 });
 

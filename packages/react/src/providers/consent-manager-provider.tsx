@@ -70,13 +70,13 @@ export function ConsentManagerProvider({
 			trackingBlockerConfig,
 		};
 
-		const store = createConsentManagerStore(namespace, storeConfig);
+		const store = createConsentManagerStore(client, namespace, storeConfig);
 
 		// Set translation config immediately
 		store.getState().setTranslationConfig(preparedTranslationConfig);
 
 		return store;
-	}, [namespace, preparedTranslationConfig, trackingBlockerConfig]);
+	}, [namespace, preparedTranslationConfig, trackingBlockerConfig, client]);
 
 	// Initialize state with the current state from the consent manager store
 	const [state, setState] = useState<PrivacyConsentState>(store.getState());

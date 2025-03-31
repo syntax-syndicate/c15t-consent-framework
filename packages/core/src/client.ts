@@ -133,23 +133,25 @@ export class c15tClient {
 	 * @returns The resolved URL string
 	 */
 	private resolveUrl(baseURL: string, path: string): string {
+		console.log('resolveUrl', baseURL, path);
 		// Case 1: baseURL is already an absolute URL (includes protocol)
 		if (ABSOLUTE_URL_REGEX.test(baseURL)) {
-			try {
-				return new URL(path, baseURL).toString();
-			} catch {
-				// Fallback to string concatenation if URL constructor fails
-				const cleanBase = baseURL.replace(TRAILING_SLASHES_REGEX, '');
-				const cleanPath = path.replace(LEADING_SLASHES_REGEX, '');
-				return `${cleanBase}/${cleanPath}`;
-			}
+			const baseUrlObj = new URL(baseURL);
+			// Remove trailing slashes from base path and leading slashes from the path to join
+			const basePath = baseUrlObj.pathname.replace(TRAILING_SLASHES_REGEX, '');
+			const cleanPath = path.replace(LEADING_SLASHES_REGEX, '');
+			// Combine the paths with a single slash
+			const newPath = `${basePath}/${cleanPath}`;
+			// Set the new path on the URL object
+			baseUrlObj.pathname = newPath;
+			console.log('new URL', baseUrlObj.toString());
+			return baseUrlObj.toString();
 		}
 
 		// Case 2: baseURL is relative (like '/api/c15t')
 		// For relative URLs, we use string concatenation with proper slash handling
-		const cleanBase = baseURL.replace(TRAILING_SLASHES_REGEX, ''); // Remove trailing slashes
-		const cleanPath = path.replace(LEADING_SLASHES_REGEX, ''); // Remove leading slashes
-
+		const cleanBase = baseURL.replace(TRAILING_SLASHES_REGEX, '');
+		const cleanPath = path.replace(LEADING_SLASHES_REGEX, '');
 		return `${cleanBase}/${cleanPath}`;
 	}
 
@@ -522,6 +524,8 @@ export function createConsentClient(options: c15tClientOptions): c15tClient {
 		...options,
 		baseURL: options.baseURL || DEFAULT_API_BASE_URL,
 	};
+
+	console.log('clientOptions', clientOptions);
 
 	return new c15tClient(clientOptions);
 }

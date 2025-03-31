@@ -30,7 +30,6 @@ import type { c15tClientOptions } from './types/client';
  *     trackingBlockerConfig: {
  *       enabledByDefault: false
  *     },
- *     consentBannerApiUrl: 'https://api.example.com/consent/banner'
  *   }
  * };
  *
@@ -138,11 +137,14 @@ export function createConsentManager(
 	// Extract store config
 	const storeConfig: StoreConfig = {
 		trackingBlockerConfig: config.store?.trackingBlockerConfig,
-		consentBannerApiUrl: config.store?.consentBannerApiUrl,
 	};
 
 	// Create the store with the given namespace and config
-	const store = createConsentManagerStore(config.store?.namespace, storeConfig);
+	const store = createConsentManagerStore(
+		client,
+		config.store?.namespace,
+		storeConfig
+	);
 
 	return { store, client };
 }

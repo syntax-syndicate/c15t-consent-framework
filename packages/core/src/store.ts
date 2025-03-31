@@ -5,7 +5,7 @@
  */
 
 import { createStore } from 'zustand/vanilla';
-import { createConsentClient } from './client';
+import type { c15tClient } from './client';
 import {
 	getEffectiveConsents,
 	hasConsentFor,
@@ -86,16 +86,6 @@ export interface StoreConfig {
 	 * Configuration for the tracking blocker.
 	 */
 	trackingBlockerConfig?: TrackingBlockerConfig;
-
-	/**
-	 * URL to fetch consent banner information from.
-	 */
-	consentBannerApiUrl?: string;
-
-	/**
-	 * Base URL for the consent client.
-	 */
-	apiBaseURL?: string;
 }
 
 /**
@@ -132,7 +122,7 @@ export interface StoreConfig {
  * @example
  * Custom namespace:
  * ```typescript
- * const store = createConsentManagerStore('MyApp');
+ * const store = createConsentManagerStore(client, 'MyApp');
  *
  * // Access from window
  * const state = window.MyApp.getState();
@@ -141,6 +131,7 @@ export interface StoreConfig {
  * @public
  */
 export const createConsentManagerStore = (
+	client: c15tClient,
 	namespace: string | undefined = 'c15tStore',
 	config?: StoreConfig
 ) => {
@@ -393,12 +384,11 @@ export const createConsentManagerStore = (
 		/**
 		 * Fetches consent banner information from the API and updates the store.
 		 *
-		 * @param url - Optional custom URL to fetch consent banner information from
 		 * @returns A promise that resolves with the consent banner response when the fetch is complete
 		 */
-		fetchConsentBannerInfo: async (
-			url?: string
-		): Promise<ShowConsentBannerResponse | undefined> => {
+		fetchConsentBannerInfo: async (): Promise<
+			ShowConsentBannerResponse | undefined
+		> => {
 			// Skip if not in browser environment
 			if (typeof window === 'undefined') {
 				return undefined;
@@ -413,11 +403,6 @@ export const createConsentManagerStore = (
 
 			// Set loading state to true
 			set({ isLoadingConsentInfo: true });
-
-			// Create a client for this request
-			const client = createConsentClient({
-				baseURL: url || config?.apiBaseURL || DEFAULT_API_BASE_URL,
-			});
 
 			try {
 				// Make the API request
