@@ -186,13 +186,36 @@ export function defineRoute<
 
 			// Otherwise, wrap it in a DoubleTieError
 			logger.error('Validation failed', { error });
+
+			// Extract validation details for better error messages
+			let validationErrors: unknown = 'Unknown validation error';
+
+			if (error instanceof Error) {
+				validationErrors = error.message;
+
+				// Handle Zod validation errors more comprehensively
+				if (
+					error.name === 'ZodError' &&
+					'format' in error &&
+					typeof error.format === 'function'
+				) {
+					try {
+						validationErrors = error.format();
+					} catch {
+						// If formatting fails, fall back to the error message
+						validationErrors = `Validation error: ${error.message}`;
+					}
+				}
+			}
+
 			throw new DoubleTieError('Validation failed', {
 				code: ERROR_CODES.BAD_REQUEST,
 				status: 422,
 				cause: error instanceof Error ? error : undefined,
 				meta: {
-					validationErrors:
-						error instanceof Error ? error.message : 'Unknown validation error',
+					validationErrors,
+					requestPath: config.path,
+					requestMethod: config.method,
 				},
 			});
 		}

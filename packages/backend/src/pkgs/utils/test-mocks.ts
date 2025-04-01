@@ -13,7 +13,9 @@ export function createMockContext(): C15TContext {
 	const mockRegistry = {
 		findOrCreateSubject: vi.fn().mockResolvedValue({ id: 'test-subject-id' }),
 		findDomain: vi.fn().mockResolvedValue({ id: 'test-domain-id' }),
-		findConsentPurposeByCode: vi.fn().mockResolvedValue({ id: 'test-purpose-id' }),
+		findConsentPurposeByCode: vi
+			.fn()
+			.mockResolvedValue({ id: 'test-purpose-id' }),
 		findConsentPolicyById: vi.fn().mockResolvedValue({
 			id: 'test-policy-id',
 			type: 'privacy_policy',
@@ -111,7 +113,8 @@ export function createMockContext(): C15TContext {
 					purposeIds: params.data.purposeIds || ['test-purpose-id'],
 					givenAt: params.data.givenAt || new Date().toISOString(),
 					status: params.data.status || 'active',
-					isActive: params.data.isActive !== undefined ? params.data.isActive : true,
+					isActive:
+						params.data.isActive !== undefined ? params.data.isActive : true,
 				});
 			}
 			if (params.model === 'consentRecord') {
@@ -139,7 +142,7 @@ export function createMockContext(): C15TContext {
 		version: '1.0.0',
 		appName: 'test-app',
 		db: {
-			setConsent: vi.fn().mockResolvedValue({ 
+			setConsent: vi.fn().mockResolvedValue({
 				id: 'test-consent-id',
 				type: 'cookie_banner',
 				status: 'active',
@@ -156,7 +159,7 @@ export function createMockContext(): C15TContext {
 			getConsentPolicy: vi.fn(),
 			generateConsentReceipt: vi.fn(),
 		},
-    //@ts-expect-error
+		//@ts-expect-error
 		registry: mockRegistry as unknown as C15TContext,
 		adapter: {
 			...mockAdapter,
