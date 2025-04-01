@@ -1,17 +1,14 @@
 import type { H3Event, H3EventContext, RouterMethod } from 'h3';
 import {
+	createError,
 	defineEventHandler,
 	getQuery as h3GetQuery,
 	getRouterParams as h3GetRouterParams,
 	readBody,
 } from 'h3';
-import type { ZodType, z } from 'zod';
+import { type ZodType, ZodError, type z } from 'zod';
 import { createLogger } from '~/pkgs/logger';
-import {
-	DoubleTieError,
-	ERROR_CODES,
-	validationPipeline,
-} from '~/pkgs/results';
+import { validationPipeline } from '~/pkgs/results';
 import type { Route } from '~/routes/types';
 
 // Define more precise types for validation data
@@ -119,7 +116,11 @@ export function defineRoute<
 					},
 					(error) => {
 						logger.warn('Body validation failed', { error });
-						throw error;
+						throw createError({
+							statusCode: 422,
+							statusMessage: 'Body validation failed',
+							data: error,
+						});
 					}
 				);
 			}
@@ -139,7 +140,11 @@ export function defineRoute<
 					},
 					(error) => {
 						logger.warn('Query validation failed', { error });
-						throw error;
+						throw createError({
+							statusCode: 422,
+							statusMessage: 'Query validation failed',
+							data: error,
+						});
 					}
 				);
 			}
@@ -159,23 +164,26 @@ export function defineRoute<
 					},
 					(error) => {
 						logger.warn('Path parameters validation failed', { error });
-						throw error;
+						throw createError({
+							statusCode: 422,
+							statusMessage: 'Path parameters validation failed',
+							data: error,
+						});
 					}
 				);
 			}
 
 			// Create event with validated context
-			const eventWithContext = {
-				...event,
-				context: {
-					...event.context,
-					validated,
-				},
-			} as ValidatedEvent<
+			const eventWithContext = event as ValidatedEvent<
 				TBodySchema extends never ? undefined : TBodySchema,
 				TQuerySchema extends never ? undefined : TQuerySchema,
 				TParamsSchema extends never ? undefined : TParamsSchema
 			>;
+
+			eventWithContext.context = {
+				...event.context,
+				validated,
+			};
 
 			return await config.handler(eventWithContext);
 		} catch (error) {

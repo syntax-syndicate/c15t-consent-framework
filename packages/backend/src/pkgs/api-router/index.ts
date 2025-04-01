@@ -1,4 +1,11 @@
-import { createApp, createRouter, toWebHandler } from 'h3';
+import {
+	createApp,
+	createRouter,
+	toWebHandler,
+	handleCors,
+	defineEventHandler,
+	type H3Event,
+} from 'h3';
 import { routes } from '~/routes';
 import type { RouterProps } from './types';
 import { getIp } from './utils/ip';
@@ -15,6 +22,22 @@ export function createApiHandler({ options, context }: RouterProps) {
 			event.context.adapter = context.adapter;
 		},
 	});
+
+	// Create CORS handler
+	const corsHandler = defineEventHandler((event: H3Event) => {
+		if (
+			handleCors(event, {
+				origin: '*',
+				methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+				allowHeaders: ['Content-Type', 'Authorization'],
+			})
+		) {
+			return;
+		}
+	});
+
+	// Add CORS handler before router
+	app.use(corsHandler);
 
 	// Create a new router and register it in app
 	const router = createRouter();

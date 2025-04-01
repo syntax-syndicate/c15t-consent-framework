@@ -1,8 +1,9 @@
+import { createError } from 'h3';
 import { z } from 'zod';
 import { defineRoute } from '~/pkgs/api-router/utils/define-route';
 import type {} from '~/pkgs/data-model';
 import type { Adapter } from '~/pkgs/db-adapters/types';
-import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
+import { ERROR_CODES } from '~/pkgs/results';
 import type { Consent } from '~/schema/consent';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
 import type { ConsentRecord } from '~/schema/consent-record';
@@ -71,9 +72,12 @@ export const setConsent = defineRoute({
 		});
 
 		if (!subject) {
-			throw new DoubleTieError('Invalid subject ID', {
-				code: ERROR_CODES.BAD_REQUEST,
-				status: 400,
+			throw createError({
+				statusCode: 400,
+				statusText: ERROR_CODES.BAD_REQUEST,
+				data: {
+					message: 'Invalid subject ID',
+				},
 			});
 		}
 
@@ -88,32 +92,44 @@ export const setConsent = defineRoute({
 			policyId = pid;
 
 			if (!policyId) {
-				throw new DoubleTieError('Policy ID is required', {
-					code: ERROR_CODES.BAD_REQUEST,
-					status: 400,
+				throw createError({
+					statusCode: 400,
+					statusText: ERROR_CODES.BAD_REQUEST,
+					data: {
+						message: 'Policy ID is required',
+					},
 				});
 			}
 
 			// Verify the policy exists and is active
 			const policy = await registry.findConsentPolicyById(policyId);
 			if (!policy) {
-				throw new DoubleTieError('Policy not found', {
-					code: ERROR_CODES.NOT_FOUND,
-					status: 404,
+				throw createError({
+					statusCode: 404,
+					statusText: ERROR_CODES.NOT_FOUND,
+					data: {
+						message: 'Policy not found',
+					},
 				});
 			}
 			if (!policy.isActive) {
-				throw new DoubleTieError('Policy is not active', {
-					code: ERROR_CODES.CONFLICT,
-					status: 409,
+				throw createError({
+					statusCode: 409,
+					statusText: ERROR_CODES.CONFLICT,
+					data: {
+						message: 'Policy is not active',
+					},
 				});
 			}
 		} else {
 			const policy = await registry.findOrCreatePolicy(type);
 			if (!policy) {
-				throw new DoubleTieError('Failed to create or find policy', {
-					code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-					status: 500,
+				throw createError({
+					statusCode: 500,
+					statusText: ERROR_CODES.INTERNAL_SERVER_ERROR,
+					data: {
+						message: 'Failed to create or find policy',
+					},
 				});
 			}
 			policyId = policy.id;
@@ -202,9 +218,12 @@ export const setConsent = defineRoute({
 		});
 
 		if (!result || !result.consent || !result.record) {
-			throw new DoubleTieError('Failed to create consent record', {
-				code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-				status: 500,
+			throw createError({
+				statusCode: 500,
+				statusText: ERROR_CODES.INTERNAL_SERVER_ERROR,
+				data: {
+					message: 'Failed to create consent record',
+				},
 			});
 		}
 
