@@ -6,9 +6,13 @@ import {
 	getRouterParams as h3GetRouterParams,
 	readBody,
 } from 'h3';
-import { ZodError, type ZodType, type z } from 'zod';
+import type { ZodType, z } from 'zod';
 import { createLogger } from '~/pkgs/logger';
-import { validationPipeline } from '~/pkgs/results';
+import {
+	DoubleTieError,
+	ERROR_CODES,
+	validationPipeline,
+} from '~/pkgs/results';
 import type { Route } from '~/routes/types';
 
 // Define more precise types for validation data
