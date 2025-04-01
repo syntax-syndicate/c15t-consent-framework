@@ -1,10 +1,10 @@
 import {
+	type H3Event,
 	createApp,
 	createRouter,
-	toWebHandler,
-	handleCors,
 	defineEventHandler,
-	type H3Event,
+	handleCors,
+	toWebHandler,
 } from 'h3';
 import { routes } from '~/routes';
 import type { RouterProps } from './types';

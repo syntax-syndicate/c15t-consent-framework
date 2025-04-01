@@ -6,7 +6,7 @@ import {
 	getRouterParams as h3GetRouterParams,
 	readBody,
 } from 'h3';
-import { type ZodType, ZodError, type z } from 'zod';
+import { ZodError, type ZodType, type z } from 'zod';
 import { createLogger } from '~/pkgs/logger';
 import { validationPipeline } from '~/pkgs/results';
 import type { Route } from '~/routes/types';
