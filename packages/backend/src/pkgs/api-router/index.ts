@@ -3,6 +3,8 @@ import { routes } from '~/routes';
 import type { RouterProps } from './types';
 import { getIp } from './utils/ip';
 
+export { defineRoute } from './utils/define-route';
+
 export function createApiHandler({ options, context }: RouterProps) {
 	// Create an app instance
 	const app = createApp({

@@ -1,35 +1,45 @@
-import { defineEventHandler } from 'h3';
-import type { Route } from './types';
+import { defineRoute } from '~/pkgs/api-router';
 
-export const showConsentBanner: Route = {
+export interface ShowConsentBannerResponse {
+	showConsentBanner: boolean;
+	jurisdiction: {
+		code: string;
+		message: string;
+	};
+	location: {
+		countryCode: string | null;
+		regionCode: string | null;
+	};
+}
+
+export const showConsentBanner = defineRoute<ShowConsentBannerResponse>({
 	path: '/show-consent-banner',
 	method: 'get',
-	handler: defineEventHandler({
-		handler: async (event) => {
-			const countryCode =
-				event.headers.get('cf-ipcountry') ||
-				event.headers.get('x-vercel-ip-country') ||
-				event.headers.get('x-amz-cf-ipcountry') ||
-				event.headers.get('x-country-code');
+	handler: async (event) => {
+		const countryCode =
+			event.headers.get('cf-ipcountry') ||
+			event.headers.get('x-vercel-ip-country') ||
+			event.headers.get('x-amz-cf-ipcountry') ||
+			event.headers.get('x-country-code');
 
-			const regionCode =
-				event.headers.get('x-vercel-ip-country-region') ||
-				event.headers.get('x-region-code');
+		const regionCode =
+			event.headers.get('x-vercel-ip-country-region') ||
+			event.headers.get('x-region-code');
 
-			const { showConsentBanner, jurisdictionCode, message } =
-				checkJurisdiction(countryCode ?? null);
+		const { showConsentBanner, jurisdictionCode, message } = checkJurisdiction(
+			countryCode ?? null
+		);
 
-			return {
-				showConsentBanner,
-				jurisdiction: {
-					code: jurisdictionCode,
-					message,
-				},
-				location: { countryCode, regionCode },
-			};
-		},
-	}),
-};
+		return {
+			showConsentBanner,
+			jurisdiction: {
+				code: jurisdictionCode,
+				message,
+			},
+			location: { countryCode, regionCode },
+		};
+	},
+});
 
 function checkJurisdiction(countryCode: string | null) {
 	const jurisdictions = {

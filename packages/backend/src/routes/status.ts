@@ -1,5 +1,4 @@
-import { defineEventHandler } from 'h3';
-import type { Route } from './types';
+import { defineRoute } from '~/pkgs/api-router';
 
 /**
  * Response type for the status endpoint
@@ -42,22 +41,20 @@ export interface StatusResponse {
  * }
  * ```
  */
-export const status: Route = {
+export const status = defineRoute<StatusResponse>({
 	path: '/status',
 	method: 'get',
-	handler: defineEventHandler({
-		handler: async (event) => {
-			const response: StatusResponse = {
-				status: 'ok',
-				version: '2.0.0',
-				timestamp: new Date().toISOString(),
-				storage: {
-					type: event.context.adapter?.id ?? 'Unavailable',
-					available: !!event.context.adapter,
-				},
-			};
+	handler: async (event) => {
+		const response: StatusResponse = {
+			status: 'ok',
+			version: '2.0.0',
+			timestamp: new Date().toISOString(),
+			storage: {
+				type: event.context.adapter?.id ?? 'Unavailable',
+				available: !!event.context.adapter,
+			},
+		};
 
-			return response;
-		},
-	}),
-};
+		return response;
+	},
+});

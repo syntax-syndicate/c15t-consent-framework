@@ -100,7 +100,7 @@ export const init = async <P extends C15TPlugin[]>(
 			}
 
 			// Create normalized options
-			const finalOptions: C15TOptions<C15TPlugin[]> = {
+			const finalOptions = {
 				...options,
 				secret,
 				baseURL: baseURL ? new URL(baseURL).origin : '',

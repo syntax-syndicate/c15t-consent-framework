@@ -1,9 +1,8 @@
-import { type EventHandlerRequest, type H3Event, defineEventHandler } from 'h3';
+import type { EventHandlerRequest, H3Event } from 'h3';
 import { z } from 'zod';
-import validateBody from '~/pkgs/api-router/utils/validate-body';
+import { defineRoute } from '~/pkgs/api-router';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
 import { validateEntityOutput } from '~/schema/definition';
-import type { Route } from './types';
 
 interface Consent {
 	id: string;
@@ -26,11 +25,17 @@ const verifyConsentSchema = z.object({
 	preferences: z.array(z.string()).optional(),
 });
 
-export const verifyConsent: Route = {
+export const verifyConsent = defineRoute<
+	VerifyConsentResponse,
+	typeof verifyConsentSchema
+>({
 	path: '/consent/verify',
 	method: 'post',
-	handler: defineEventHandler(async (event) => {
-		const body = await validateBody(event, verifyConsentSchema);
+	validations: {
+		body: verifyConsentSchema,
+	},
+	handler: async (event) => {
+		const { body } = event.context.validated;
 		const {
 			type,
 			subjectId,
@@ -104,6 +109,7 @@ export const verifyConsent: Route = {
 				policyId: policy.id,
 				subjectId: subject.id,
 				domainId: domainRecord.id,
+				purposeIds,
 				type,
 				event,
 			});
@@ -122,11 +128,21 @@ export const verifyConsent: Route = {
 			policyId: latestPolicy.id,
 			subjectId: subject.id,
 			domainId: domainRecord.id,
+			purposeIds,
 			type,
 			event,
 		});
-	}),
-};
+	},
+});
+
+interface ConsentCheckParams {
+	policyId: string;
+	subjectId: string;
+	domainId: string;
+	purposeIds?: string[];
+	type: string;
+	event: H3Event<EventHandlerRequest>;
+}
 
 async function policyConsentGiven({
 	policyId,
@@ -135,14 +151,7 @@ async function policyConsentGiven({
 	purposeIds,
 	type,
 	event,
-}: {
-	policyId: string;
-	subjectId: string;
-	domainId: string;
-	purposeIds?: string[];
-	type: string;
-	event: H3Event<EventHandlerRequest>;
-}): Promise<VerifyConsentResponse> {
+}: ConsentCheckParams): Promise<VerifyConsentResponse> {
 	const { registry, adapter } = event.context;
 
 	const rawConsents = await adapter.findMany({
@@ -158,7 +167,7 @@ async function policyConsentGiven({
 		},
 	});
 
-	const consents = rawConsents.map((consent) =>
+	const consents = rawConsents.map((consent: Record<string, unknown>) =>
 		validateEntityOutput('consent', consent, {})
 	);
 
