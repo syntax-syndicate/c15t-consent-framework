@@ -135,13 +135,10 @@ export interface C15TInstance<PluginTypes extends C15TPlugin[] = C15TPlugin[]> {
  * });
  * ```
  */
-export const c15tInstance = <
-	PluginTypes extends C15TPlugin[] = C15TPlugin[],
-	ConfigOptions extends C15TOptions = C15TOptions,
->(
-	options: ConfigOptions
+export const c15tInstance = <PluginTypes extends C15TPlugin[] = C15TPlugin[]>(
+	options: C15TOptions<PluginTypes>
 ): C15TInstance<PluginTypes> => {
-	const contextPromise = init(options);
+	const contextPromise = init(options as C15TOptions);
 	let apiHandler: ((request: Request) => Promise<Response>) | null = null;
 
 	/**

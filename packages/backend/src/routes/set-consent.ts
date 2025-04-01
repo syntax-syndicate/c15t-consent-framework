@@ -1,10 +1,10 @@
-import { defineEventHandler, createError } from 'h3';
-import type { Route } from './types';
-import validateBody from '~/pkgs/api-router/utils/validate-body';
+import { createError, defineEventHandler } from 'h3';
 import { z } from 'zod';
+import validateBody from '~/pkgs/api-router/utils/validate-body';
+import type { Consent } from '~/schema/consent';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
 import type { ConsentRecord } from '~/schema/consent-record';
-import type { Consent } from '~/schema/consent';
+import type { Route } from './types';
 
 const baseConsentSchema = z.object({
 	subjectId: z.string().optional(),

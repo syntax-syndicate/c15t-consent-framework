@@ -1,6 +1,7 @@
-import { createError, readBody, readFormData, type H3Event } from 'h3';
-import type { ZodSchema } from 'zod';
+import { type H3Event, createError, readBody, readFormData } from 'h3';
 import superjson from 'superjson';
+import type { ZodSchema } from 'zod';
+import { logger } from '~/pkgs/logger';
 
 /**
  * Validates and parses request body data with proper type conversion
@@ -63,12 +64,12 @@ export default async function validateBody<T>(
 		// Use SuperJSON for any remaining complex type conversions
 		const serializedBody = superjson.stringify(processedBody);
 		const parsedBody = superjson.parse(serializedBody);
-		console.log('parsedBody', parsedBody);
+		logger.debug('Parsed request body', parsedBody);
 		// Validate with Zod schema
 		const result = schema.safeParse(parsedBody);
 
 		if (!result.success) {
-			console.log('result.error', result.error);
+			logger.warn('Body validation failed', result.error);
 			throw createError({
 				statusCode: 400,
 				statusMessage: 'Invalid request body',
@@ -78,7 +79,7 @@ export default async function validateBody<T>(
 
 		return result.data;
 	} catch (error: unknown) {
-		console.log('error', error);
+		logger.error('Error parsing request body', error);
 		if (
 			error instanceof Error &&
 			'statusCode' in error &&

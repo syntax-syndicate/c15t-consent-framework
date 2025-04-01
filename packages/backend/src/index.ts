@@ -17,15 +17,6 @@ export * from './core';
 // Export the C15TInstance type explicitly for easier consumption
 export type { C15TInstance } from './core';
 
-// export response types
-export type {
-	SetConsentRequest,
-	SetConsentResponse,
-	ShowConsentBannerResponse,
-	VerifyConsentRequest,
-	VerifyConsentResponse,
-} from './routes-old';
-
 //------------------------------------------------------------------------------
 // Plugins
 //------------------------------------------------------------------------------

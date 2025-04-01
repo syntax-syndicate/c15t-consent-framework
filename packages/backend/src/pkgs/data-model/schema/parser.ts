@@ -160,8 +160,8 @@ export function getAllFields(
 		const pluginSchema = plugin.schema as C15TPluginSchema | undefined;
 		if (pluginSchema?.[table]) {
 			addFields(
-				pluginSchema[table].fields,
-				`plugin: ${plugin.name || 'unnamed'}`
+				pluginSchema[table].fields as Record<string, Field>,
+				`plugin: ${(plugin as { name?: string }).name || 'unnamed'}`
 			);
 		}
 	}

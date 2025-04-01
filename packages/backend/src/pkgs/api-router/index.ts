@@ -1,7 +1,7 @@
 import { createApp, createRouter, toWebHandler } from 'h3';
 import { routes } from '~/routes';
-import { getIp } from './utils/ip';
 import type { RouterProps } from './types';
+import { getIp } from './utils/ip';
 
 export function createApiHandler({ options, context }: RouterProps) {
 	// Create an app instance

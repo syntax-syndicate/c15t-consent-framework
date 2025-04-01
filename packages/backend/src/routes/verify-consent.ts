@@ -1,9 +1,9 @@
-import { defineEventHandler, type EventHandlerRequest, type H3Event } from 'h3';
-import type { Route } from './types';
-import validateBody from '~/pkgs/api-router/utils/validate-body';
+import { type EventHandlerRequest, type H3Event, defineEventHandler } from 'h3';
 import { z } from 'zod';
+import validateBody from '~/pkgs/api-router/utils/validate-body';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
 import { validateEntityOutput } from '~/schema/definition';
+import type { Route } from './types';
 
 interface Consent {
 	id: string;

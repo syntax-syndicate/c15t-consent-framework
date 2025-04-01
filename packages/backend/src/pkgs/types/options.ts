@@ -5,6 +5,7 @@ import type { DoubleTieContext } from './context';
 
 // Import table configuration types from the schema module
 import type { TablesConfig } from '~/schema/types';
+import type { DoubleTiePlugin } from './plugins';
 
 /**
  * Main configuration options for the DoubleTie SDK framework
@@ -69,6 +70,12 @@ export interface DoubleTieOptions {
 	 * @example ["https://example.com", "https://www.example.com"]
 	 */
 	trustedOrigins?: string[] | ((request: Request) => string[]);
+
+	/**
+	 * Plugins to extend functionality
+	 * Array of plugin objects that add features to the system
+	 */
+	plugins?: DoubleTiePlugin[];
 
 	/**
 	 * Logger configuration
@@ -151,6 +158,19 @@ export interface DoubleTieOptions {
 		 */
 		onError?: (error: unknown, ctx: DoubleTieContext) => void | Promise<void>;
 	};
+	/**
+	 * Hooks
+	 */
+	hooks?: {
+		/**
+		 * Before a request is processed
+		 */
+		before?: DoubleTieMiddleware;
+		/**
+		 * After a request is processed
+		 */
+		after?: DoubleTieMiddleware;
+	};
 
 	/**
 	 * Database tables configuration
@@ -158,3 +178,10 @@ export interface DoubleTieOptions {
 	 */
 	tables?: TablesConfig;
 }
+
+/**
+ * Middleware function for processing API requests
+ */
+export type DoubleTieMiddleware = (
+	context: Record<string, unknown>
+) => Promise<Response>;
