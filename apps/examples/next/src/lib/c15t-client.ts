@@ -1,4 +1,4 @@
-import { createConsentClient } from '@c15t/backend/integrations/react';
+import { createConsentClient } from 'c15t';
 
 /**
  * Create a client for React components to use
@@ -7,11 +7,11 @@ import { createConsentClient } from '@c15t/backend/integrations/react';
  * and exposes hooks and utilities for consent management.
  */
 export const c15tClient = createConsentClient({
-	baseUrl: '/api/c15t',
-	defaultPreferences: {
-		analytics: true,
-		marketing: true,
-		preferences: true,
-	},
+	baseURL: '/api/c15t',
+	// defaultPreferences: {
+	// 	analytics: true,
+	// 	marketing: true,
+	// 	preferences: true,
+	// },
 	// Note: plugins property removed as it's not in the c15tClientConfig type
 });
