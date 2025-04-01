@@ -1,4 +1,4 @@
-import { defineRoute } from '~/pkgs/api-router';
+import { defineRoute } from '~/pkgs/api-router/utils/define-route';
 
 /**
  * Response type for the status endpoint

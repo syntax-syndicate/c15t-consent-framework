@@ -1,6 +1,6 @@
 import type { EventHandlerRequest, H3Event } from 'h3';
 import { z } from 'zod';
-import { defineRoute } from '~/pkgs/api-router';
+import { defineRoute } from '~/pkgs/api-router/utils/define-route';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
 import { validateEntityOutput } from '~/schema/definition';
 

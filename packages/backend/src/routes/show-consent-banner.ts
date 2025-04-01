@@ -1,4 +1,5 @@
-import { defineRoute } from '~/pkgs/api-router';
+import { defineRoute } from '~/pkgs/api-router/utils/define-route';
+
 
 export interface ShowConsentBannerResponse {
 	showConsentBanner: boolean;
