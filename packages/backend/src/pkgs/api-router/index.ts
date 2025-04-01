@@ -1,20 +1,16 @@
 import { createApp, createRouter, toWebHandler } from 'h3';
 import { routes } from '~/routes';
 import { getIp } from './utils/ip';
-import type { C15TOptions } from '~/types';
-interface RouterProps {
-	options: C15TOptions;
-}
+import type { RouterProps } from './types';
 
-export function createApiHandler({ options }: RouterProps) {
+export function createApiHandler({ options, context }: RouterProps) {
 	// Create an app instance
 	const app = createApp({
 		onRequest(event) {
-			// Set the context
 			event.context.ipAddress = getIp(event.headers, options);
 			event.context.userAgent = event.node.req.headers['user-agent'] || null;
-
-			console.log(event.context);
+			event.context.registry = context.registry;
+			event.context.adapter = context.adapter;
 		},
 	});
 

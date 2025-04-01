@@ -2,6 +2,9 @@
  * Type declarations for H3 framework extensions
  */
 
+import type { Adapter } from '~/pkgs/db-adapters/types';
+import type { createRegistry } from '~/schema/create-registry';
+
 declare module 'h3' {
 	interface H3EventContext {
 		/**
@@ -14,8 +17,15 @@ declare module 'h3' {
 		 * The user agent string from the client's browser
 		 */
 		userAgent: string | null;
+
+		/**
+		 * The registry of database operations
+		 */
+		registry: ReturnType<typeof createRegistry>;
+
+		/**
+		 * The database adapter
+		 */
+		adapter: Adapter;
 	}
 }
-
-// This export is required to make this a module
-export {};

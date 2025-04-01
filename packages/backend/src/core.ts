@@ -6,7 +6,7 @@ import {
 	okAsync,
 	tryCatchAsync,
 } from './pkgs/results';
-import { router } from './router';
+// import type { router } from './router';
 
 import { getBaseURL } from '~/pkgs/utils';
 import type { C15TContext, C15TOptions, C15TPlugin } from '~/types';
@@ -192,7 +192,14 @@ export const c15tInstance = <
 			];
 
 			try {
-				const { handler } = createApiHandler({ options });
+				const { handler } = createApiHandler({
+					options: ctx.options,
+					context: {
+						adapter: ctx.adapter,
+						trustedOrigins: ctx.trustedOrigins,
+						registry: ctx.registry,
+					},
+				});
 
 				// Use tryCatchAsync with a function that returns a promise
 				return tryCatchAsync(
@@ -243,12 +250,13 @@ export const c15tInstance = <
 			}
 
 			try {
-				const { endpoints } = router(context, options);
-				// Convert endpoints to the expected FilterActions type and wrap in okAsync
-				const typedEndpoints = endpoints as unknown as FilterActions<
-					ReturnType<typeof router>['endpoints']
-				>;
-				return okAsync(typedEndpoints);
+				// const { endpoints } = router(context, options);
+				// // Convert endpoints to the expected FilterActions type and wrap in okAsync
+				// const typedEndpoints = endpoints as unknown as FilterActions<
+				// 	ReturnType<typeof router>['endpoints']
+				// >;
+				// return okAsync(typedEndpoints);
+				return okAsync(null);
 			} catch (error) {
 				return failAsync(
 					`Failed to get API endpoints: ${error instanceof Error ? error.message : String(error)}`,
