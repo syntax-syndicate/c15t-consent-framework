@@ -29,8 +29,10 @@ export * from './plugins/geo';
 //------------------------------------------------------------------------------
 // Types
 //------------------------------------------------------------------------------
-
 /**
  * All system types bundled under a namespace to avoid conflicts
  */
 export * as Types from './pkgs/types';
+
+// Export all the response types to make them available for client applications
+export * from './response-types';

@@ -16,7 +16,7 @@ export interface VerifyConsentResponse {
 	consent?: Consent;
 }
 
-const verifyConsentSchema = z.object({
+export const VerifyConsentRequestBody = z.object({
 	subjectId: z.string().optional(),
 	externalSubjectId: z.string().optional(),
 	domain: z.string(),
@@ -25,14 +25,11 @@ const verifyConsentSchema = z.object({
 	preferences: z.array(z.string()).optional(),
 });
 
-export const verifyConsent = defineRoute<
-	VerifyConsentResponse,
-	typeof verifyConsentSchema
->({
+export const verifyConsent = defineRoute({
 	path: '/consent/verify',
 	method: 'post',
 	validations: {
-		body: verifyConsentSchema,
+		body: VerifyConsentRequestBody,
 	},
 	handler: async (event) => {
 		const { body } = event.context.validated;

@@ -34,7 +34,7 @@ const otherConsentSchema = baseConsentSchema.extend({
 	preferences: z.record(z.boolean()).optional(),
 });
 
-const setConsentSchema = z.discriminatedUnion('type', [
+export const SetConsentRequestBody = z.discriminatedUnion('type', [
 	cookieBannerSchema,
 	policyBasedSchema,
 	otherConsentSchema,
@@ -53,14 +53,11 @@ export interface SetConsentResponse {
 	givenAt: string;
 }
 
-export const setConsent = defineRoute<
-	SetConsentResponse,
-	typeof setConsentSchema
->({
+export const setConsent = defineRoute({
 	path: '/consent/set',
 	method: 'post',
 	validations: {
-		body: setConsentSchema,
+		body: SetConsentRequestBody,
 	},
 	handler: async (event) => {
 		const { body } = event.context.validated;

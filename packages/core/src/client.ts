@@ -1,10 +1,10 @@
 import type { FetchOptions, ResponseContext, c15tClientOptions } from './types';
 
 import type {
-	SetConsentRequest,
+	SetConsentRequestBody,
 	SetConsentResponse,
 	ShowConsentBannerResponse,
-	VerifyConsentRequest,
+	VerifyConsentRequestBody,
 	VerifyConsentResponse,
 } from '@c15t/backend';
 
@@ -429,9 +429,9 @@ export class c15tClient {
 	 * @returns Response containing the created consent record
 	 */
 	async setConsent(
-		options?: FetchOptions<SetConsentResponse, SetConsentRequest>
+		options?: FetchOptions<SetConsentResponse, SetConsentRequestBody>
 	): Promise<ResponseContext<SetConsentResponse>> {
-		return this.fetcher<SetConsentResponse, SetConsentRequest>(
+		return this.fetcher<SetConsentResponse, SetConsentRequestBody>(
 			API_ENDPOINTS.SET_CONSENT,
 			{
 				method: 'POST',
@@ -474,9 +474,9 @@ export class c15tClient {
 	 * @returns Response indicating if the consent is valid and any failure reasons
 	 */
 	async verifyConsent(
-		options?: FetchOptions<VerifyConsentResponse, VerifyConsentRequest>
+		options?: FetchOptions<VerifyConsentResponse, VerifyConsentRequestBody>
 	): Promise<ResponseContext<VerifyConsentResponse>> {
-		return this.fetcher<VerifyConsentResponse, VerifyConsentRequest>(
+		return this.fetcher<VerifyConsentResponse, VerifyConsentRequestBody>(
 			API_ENDPOINTS.VERIFY_CONSENT,
 			{
 				method: 'POST',
