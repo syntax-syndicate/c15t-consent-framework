@@ -9,7 +9,7 @@ import { type c15tClientOptions, createConsentClient } from '@c15t/react';
  * and exposes hooks and utilities for consent management.
  */
 export const c15tClient = createConsentClient({
-	baseURL: 'http://localhost:8787/',
+	baseURL: process.env.NEXT_PUBLIC_C15T_URL ?? 'http://localhost:8787/', // (For local development)
 	defaultPreferences: {
 		analytics: true,
 		marketing: true,
