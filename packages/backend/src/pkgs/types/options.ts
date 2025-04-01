@@ -1,9 +1,7 @@
-import type { DoubleTieMiddleware } from '~/pkgs/api-router-old';
 import type { DatabaseHook, EntityName } from '~/pkgs/data-model';
 import type { DatabaseConfiguration } from '~/pkgs/db-adapters/adapters/kysely-adapter/types';
 import type { Logger } from '~/pkgs/logger';
 import type { DoubleTieContext } from './context';
-import type { DoubleTiePlugin } from './plugins';
 
 // Import table configuration types from the schema module
 import type { TablesConfig } from '~/schema/types';
@@ -28,9 +26,7 @@ import type { TablesConfig } from '~/schema/types';
  * };
  * ```
  */
-export interface DoubleTieOptions<
-	P extends DoubleTiePlugin[] = DoubleTiePlugin[],
-> {
+export interface DoubleTieOptions {
 	/**
 	 * The base URL for the API (optional if running in a browser)
 	 * @example "https://example.com"
@@ -73,12 +69,6 @@ export interface DoubleTieOptions<
 	 * @example ["https://example.com", "https://www.example.com"]
 	 */
 	trustedOrigins?: string[] | ((request: Request) => string[]);
-
-	/**
-	 * Plugins to extend functionality
-	 * Array of plugin objects that add features to the system
-	 */
-	plugins?: P;
 
 	/**
 	 * Logger configuration
@@ -160,19 +150,6 @@ export interface DoubleTieOptions<
 		 * @param ctx - Auth context
 		 */
 		onError?: (error: unknown, ctx: DoubleTieContext) => void | Promise<void>;
-	};
-	/**
-	 * Hooks
-	 */
-	hooks?: {
-		/**
-		 * Before a request is processed
-		 */
-		before?: DoubleTieMiddleware;
-		/**
-		 * After a request is processed
-		 */
-		after?: DoubleTieMiddleware;
 	};
 
 	/**

@@ -133,7 +133,6 @@ export class c15tClient {
 	 * @returns The resolved URL string
 	 */
 	private resolveUrl(baseURL: string, path: string): string {
-		console.log('resolveUrl', baseURL, path);
 		// Case 1: baseURL is already an absolute URL (includes protocol)
 		if (ABSOLUTE_URL_REGEX.test(baseURL)) {
 			const baseUrlObj = new URL(baseURL);
@@ -144,7 +143,6 @@ export class c15tClient {
 			const newPath = `${basePath}/${cleanPath}`;
 			// Set the new path on the URL object
 			baseUrlObj.pathname = newPath;
-			console.log('new URL', baseUrlObj.toString());
 			return baseUrlObj.toString();
 		}
 
@@ -524,8 +522,6 @@ export function createConsentClient(options: c15tClientOptions): c15tClient {
 		...options,
 		baseURL: options.baseURL || DEFAULT_API_BASE_URL,
 	};
-
-	console.log('clientOptions', clientOptions);
 
 	return new c15tClient(clientOptions);
 }
