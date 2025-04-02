@@ -1,13 +1,12 @@
 import { setConsent } from './set-consent';
 import { showConsentBanner } from './show-consent-banner';
 import { status } from './status';
+import type { Route } from './types';
 import { verifyConsent } from './verify-consent';
-export * from './error';
-export * from './ok';
 
-export const baseEndpoints = {
-	setConsent,
-	showConsentBanner,
+export const routes: Route[] = [
 	status,
+	showConsentBanner,
+	setConsent,
 	verifyConsent,
-};
+];

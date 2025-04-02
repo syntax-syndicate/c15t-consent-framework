@@ -17,15 +17,6 @@ export * from './core';
 // Export the C15TInstance type explicitly for easier consumption
 export type { C15TInstance } from './core';
 
-/**
- * Selected client types needed for common use cases
- */
-export type {
-	c15tClientOptions,
-	FetchOptions,
-	ResponseContext,
-} from './client/types';
-
 //------------------------------------------------------------------------------
 // Plugins
 //------------------------------------------------------------------------------
@@ -38,8 +29,10 @@ export * from './plugins/geo';
 //------------------------------------------------------------------------------
 // Types
 //------------------------------------------------------------------------------
-
 /**
  * All system types bundled under a namespace to avoid conflicts
  */
 export * as Types from './pkgs/types';
+
+// Export all the response types to make them available for client applications
+export * from './response-types';
