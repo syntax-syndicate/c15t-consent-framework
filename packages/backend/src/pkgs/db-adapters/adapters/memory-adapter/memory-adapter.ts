@@ -165,12 +165,17 @@ const createEntityTransformer = (options: C15TOptions) => {
 			model: EntityType,
 			action: 'update' | 'create'
 		): Record<string, unknown> {
+			const advancedOptions =
+				(options.advanced as {
+					generateId?: (params: { model: string; size?: number }) => string;
+				}) || {};
+
 			const transformedData: Record<string, unknown> =
 				action === 'update'
 					? {}
 					: {
-							id: options.advanced?.generateId
-								? options.advanced.generateId({
+							id: advancedOptions.generateId
+								? advancedOptions.generateId({
 										model,
 									})
 								: data.id || generateId(schema[model].entityPrefix),
@@ -338,6 +343,15 @@ export const memoryAdapter =
 	(options: C15TOptions): Adapter => {
 		const { transformInput, transformOutput, convertWhereClause, getField } =
 			createEntityTransformer(options);
+
+		const schema = getConsentTables(options);
+
+		// Pre-initialize all tables
+		for (const model in schema) {
+			if (!db[model]) {
+				db[model] = [];
+			}
+		}
 
 		return {
 			id: 'memory',

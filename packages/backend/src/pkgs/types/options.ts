@@ -1,10 +1,12 @@
-import type { DatabaseHook, EntityName } from '~/pkgs/data-model';
+import type { DatabaseHook } from '~/pkgs/data-model';
 import type { DatabaseConfiguration } from '~/pkgs/db-adapters/adapters/kysely-adapter/types';
-import type { Logger } from '~/pkgs/logger';
-import type { DoubleTieContext } from './context';
 
+import type { Tracer } from '@opentelemetry/api';
+import type { H3Event } from 'h3';
 // Import table configuration types from the schema module
 import type { TablesConfig } from '~/schema/types';
+import type { LoggerOptions } from '../logger';
+import type { DoubleTieContext } from './context';
 import type { DoubleTiePlugin } from './plugins';
 
 /**
@@ -81,7 +83,7 @@ export interface DoubleTieOptions {
 	 * Logger configuration
 	 * Controls how events are logged
 	 */
-	logger?: Logger;
+	logger?: LoggerOptions;
 
 	/**
 	 * allows you to define custom hooks that can be
@@ -89,7 +91,8 @@ export interface DoubleTieOptions {
 	 * operations.
 	 */
 	databaseHooks?: DatabaseHook[];
-	/*
+
+	/**
 	 * Advanced configuration options
 	 * Settings for specialized use cases
 	 */
@@ -128,7 +131,7 @@ export interface DoubleTieOptions {
 		 * Function to generate IDs
 		 * Custom ID generation for records and other entities
 		 */
-		generateId?: (options: { model: EntityName; size?: number }) => string;
+		generateId?: (options: { model: string; size?: number }) => string;
 
 		/**
 		 * Disable database transactions
@@ -140,6 +143,7 @@ export interface DoubleTieOptions {
 		 */
 		disableTransactions?: boolean;
 	};
+
 	/**
 	 * API error handling
 	 */
@@ -158,6 +162,7 @@ export interface DoubleTieOptions {
 		 */
 		onError?: (error: unknown, ctx: DoubleTieContext) => void | Promise<void>;
 	};
+
 	/**
 	 * Hooks
 	 */
@@ -173,15 +178,134 @@ export interface DoubleTieOptions {
 	};
 
 	/**
+	 * OpenTelemetry configuration for observability
+	 *
+	 * Controls how telemetry data is collected and exported, allowing
+	 * users to integrate with their own observability stack.
+	 *
+	 * @example
+	 * ```typescript
+	 * // Basic configuration
+	 * telemetry: {
+	 *   disabled: false,
+	 *   defaultAttributes: {
+	 *     'deployment.environment': 'production'
+	 *   }
+	 * }
+	 * ```
+	 *
+	 * @example
+	 * ```typescript
+	 * // Using a custom tracer
+	 * import { trace } from '@opentelemetry/api';
+	 *
+	 * const tracer = trace.getTracer('my-custom-tracer');
+	 *
+	 * telemetry: {
+	 *   tracer,
+	 *   defaultAttributes: {
+	 *     'service.instance.id': instanceId
+	 *   }
+	 * }
+	 * ```
+	 */
+	telemetry?: {
+		/**
+		 * Custom OpenTelemetry tracer to use
+		 *
+		 * If provided, this tracer will be used instead of creating a new one.
+		 * This allows for integration with existing OpenTelemetry setups.
+		 */
+		tracer?: Tracer;
+
+		/**
+		 * Whether to disable telemetry collection
+		 *
+		 * When set to true, no telemetry data will be collected or exported.
+		 * Useful for development environments or when running tests.
+		 *
+		 * @default false
+		 */
+		disabled?: boolean;
+
+		/**
+		 * Default attributes to add to all telemetry spans
+		 *
+		 * These attributes will be added to every span created by the system,
+		 * useful for adding environment, deployment, or instance information.
+		 *
+		 * Required attributes like 'service.name' and 'service.version' will be
+		 * automatically added based on application configuration.
+		 */
+		defaultAttributes?: Record<string, string | number | boolean>;
+	};
+
+	/**
 	 * Database tables configuration
 	 * Contains all entity table configurations
 	 */
 	tables?: TablesConfig;
+
+	/**
+	 * Any additional options
+	 */
+	[key: string]: unknown;
 }
 
 /**
  * Middleware function for processing API requests
  */
 export type DoubleTieMiddleware = (
-	context: Record<string, unknown>
-) => Promise<Response>;
+	event: H3Event,
+	next: () => Promise<unknown>
+) => Promise<unknown>;
+
+/**
+ * Advanced configuration options
+ */
+export interface AdvancedOptions {
+	/**
+	 * Custom ID generator function
+	 */
+	generateId?: (options: { model: string; size?: number }) => string;
+
+	/**
+	 * IP address configuration
+	 */
+	ipAddress?: {
+		/**
+		 * Whether to disable IP tracking
+		 */
+		disableIpTracking?: boolean;
+
+		/**
+		 * Headers to use for IP address detection
+		 */
+		ipAddressHeaders?: string[];
+	};
+
+	/**
+	 * Any other advanced options
+	 */
+	[key: string]: unknown;
+}
+
+/**
+ * Telemetry configuration options
+ */
+export interface TelemetryOptions {
+	/**
+	 * Custom tracer to use
+	 */
+	tracer?: Tracer;
+
+	/**
+	 * Whether to disable telemetry
+	 */
+	disabled?: boolean;
+
+	/**
+	 * Default attributes to add to all spans
+	 */
+	defaultAttributes?: Record<string, string | number | boolean>;
+}

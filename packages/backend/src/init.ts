@@ -1,7 +1,13 @@
+import { Resource } from '@opentelemetry/resources';
+import { NodeSDK } from '@opentelemetry/sdk-node';
+import { ConsoleSpanExporter } from '@opentelemetry/sdk-trace-base';
 import { defu } from 'defu';
 import { getAdapter } from '~/pkgs/db-adapters';
 import { createLogger } from '~/pkgs/logger';
 import type { RegistryContext } from '~/pkgs/types';
+import { env, getBaseURL, isProduction } from '~/pkgs/utils';
+import type { C15TContext, C15TOptions, C15TPlugin } from '~/types';
+import type { DatabaseHook } from './pkgs/data-model';
 import { generateId } from './pkgs/data-model/fields/id-generator';
 import type { EntityName } from './pkgs/data-model/schema/types';
 import {
@@ -12,10 +18,15 @@ import {
 	ok,
 	promiseToResult,
 } from './pkgs/results';
+import { setTelemetrySdk } from './pkgs/telemetry';
+import {
+	type TelemetryConfig,
+	createTelemetryOptions,
+} from './pkgs/telemetry/utils';
+import type { DoubleTieOptions } from './pkgs/types/options';
 import { createRegistry } from './schema/create-registry';
 import { getConsentTables } from './schema/definition';
 
-import { env, getBaseURL, isProduction } from '~/pkgs/utils';
 /**
  * c15t Initialization Module
  *
@@ -31,14 +42,15 @@ import { env, getBaseURL, isProduction } from '~/pkgs/utils';
  *
  * This is an internal module typically not used directly by consumers of the c15t library.
  */
-import type { C15TContext, C15TOptions, C15TPlugin } from '~/types';
-import type { DoubleTieOptions } from './pkgs/types/options';
 
 /**
  * Default secret used when no secret is provided
  * This should only be used in development environments
  */
 const DEFAULT_SECRET = 'c15t-default-secret-please-change-in-production';
+
+// SDK instance should be at module level for proper lifecycle management
+let telemetrySdk: NodeSDK | undefined;
 
 /**
  * Initializes the c15t consent management system using Result pattern
@@ -77,17 +89,110 @@ export const init = async <P extends C15TPlugin[]>(
 	options: C15TOptions<P>
 ): Promise<SDKResult<C15TContext>> => {
 	try {
+		// Type-safe handling of options
+		const loggerOptions = options.logger;
+		const baseUrlStr = options.baseURL as string | undefined;
+		const basePathStr = options.basePath as string | undefined;
+		const databaseHooks = (options.databaseHooks as DatabaseHook[]) || [];
+
+		// Create a single logger instance early in the initialization process
+		const logger = createLogger({
+			...loggerOptions,
+			appName: String(options.appName || 'c15t'), // Ensure consistent app name and type safety
+		});
+
+		// Create telemetry options
+		const telemetryOptions = createTelemetryOptions(
+			String(options.appName || 'c15t'),
+			options.telemetry as TelemetryConfig
+		);
+
+		// Initialize telemetry directly here instead of using a separate function
+		let telemetryInitialized = false;
+		try {
+			// Skip if SDK already initialized or telemetry is disabled
+			if (telemetrySdk) {
+				logger.debug('Telemetry SDK already initialized, skipping');
+				telemetryInitialized = true;
+			} else if (telemetryOptions?.disabled) {
+				logger.info('Telemetry is disabled by configuration');
+				telemetryInitialized = false;
+			} else {
+				// Create a telemetry resource with provided values or safe defaults
+				const resource = new Resource({
+					'service.name': String(options?.appName || 'c15t'),
+					'service.version': String(process.env.npm_package_version || '1.0.0'),
+					...(telemetryOptions?.defaultAttributes || {}),
+				});
+				logger.debug('Initializing telemetry with resource attributes', {
+					attributes: resource.attributes,
+				});
+
+				// Use provided tracer or fallback to console exporter
+				const traceExporter = telemetryOptions?.tracer
+					? undefined // SDK will use the provided tracer
+					: new ConsoleSpanExporter();
+
+				// Create and start the SDK
+				telemetrySdk = new NodeSDK({
+					resource,
+					traceExporter,
+				});
+
+				// Share the SDK reference with the telemetry module so shutdown can work
+				setTelemetrySdk(telemetrySdk);
+
+				telemetrySdk.start();
+				logger.info('Telemetry successfully initialized');
+				telemetryInitialized = true;
+			}
+		} catch (error) {
+			// Log the error but don't crash the application
+			logger.error('Telemetry initialization failed', {
+				error: error instanceof Error ? error.message : String(error),
+				stack: error instanceof Error ? error.stack : undefined,
+			});
+			logger.warn('Continuing without telemetry');
+			telemetryInitialized = false;
+		}
+
+		// Log telemetry initialization status
+		if (telemetryOptions?.disabled) {
+			logger.info('Telemetry is disabled by configuration');
+		} else if (telemetryInitialized) {
+			logger.info('Telemetry initialized successfully');
+		} else {
+			logger.warn(
+				'Telemetry initialization failed, continuing without telemetry'
+			);
+		}
+
 		// Initialize core components
+		logger.info('Initializing adapter', {
+			storage:
+				options.storage && typeof options.storage === 'object'
+					? ((options.storage as Record<string, unknown>).type as string) ||
+						'unknown'
+					: 'unknown',
+			clientVersion: options.clientVersion || 'not provided',
+			appName: options.appName,
+			baseURL: options.baseURL,
+		});
+
 		const adapterResult = await promiseToResult(
 			getAdapter(options),
 			ERROR_CODES.INITIALIZATION_FAILED
 		);
 
+		// After getting adapter
+		logger.debug('Adapter initialization result', {
+			success: adapterResult.isOk(),
+		});
+
 		return adapterResult.andThen((adapter) => {
-			const logger = createLogger(options.logger);
-			const baseURL = getBaseURL(options.baseURL, options.basePath);
+			const baseURL = getBaseURL(baseUrlStr, basePathStr);
 			const secret =
-				options.secret ||
+				(options.secret as string) ||
 				env.C15T_SECRET ||
 				env.CONSENT_SECRET ||
 				DEFAULT_SECRET;
@@ -99,13 +204,14 @@ export const init = async <P extends C15TPlugin[]>(
 				);
 			}
 
-			// Create normalized options
-			const finalOptions = {
+			// Create normalized options directly with h3 patterns but no version field
+			const finalOptions: DoubleTieOptions = {
 				...options,
 				secret,
 				baseURL: baseURL ? new URL(baseURL).origin : '',
-				basePath: options.basePath || '/api/c15t',
+				basePath: basePathStr || '/api/c15t',
 				plugins: [...(options.plugins || []), ...getInternalPlugins(options)],
+				telemetry: telemetryOptions,
 			};
 
 			// Create ID generator
@@ -119,23 +225,23 @@ export const init = async <P extends C15TPlugin[]>(
 				);
 			};
 
-			// Create registry context - just what registries need
+			// Create registry context
 			const registryContext: RegistryContext = {
 				adapter,
-				options: finalOptions as unknown as DoubleTieOptions,
+				options: finalOptions,
 				logger,
-				hooks: options.databaseHooks || [],
+				hooks: databaseHooks,
 				generateId: generateIdFunc,
 			};
 
 			// Create full application context
 			const ctx: C15TContext = {
-				appName: finalOptions.appName || 'c15t Consent Manager',
-				options: finalOptions as unknown as DoubleTieOptions,
+				appName: (finalOptions.appName as string) || 'c15t Consent Manager',
+				options: finalOptions,
 				trustedOrigins: getTrustedOrigins(finalOptions),
 				baseURL: baseURL || '',
 				secret,
-				logger,
+				logger, // Use the shared logger instance
 				generateId: generateIdFunc,
 				adapter,
 				registry: createRegistry(registryContext),
@@ -146,6 +252,12 @@ export const init = async <P extends C15TPlugin[]>(
 			return runPluginInit(ctx);
 		});
 	} catch (error) {
+		const errorLogger = createLogger(options.logger);
+		errorLogger.error('Initialization failed', {
+			error: error instanceof Error ? error.message : String(error),
+			stack: error instanceof Error ? error.stack : undefined,
+		});
+
 		return failAsync(
 			`Failed to initialize consent system: ${error instanceof Error ? error.message : String(error)}`,
 			{
@@ -230,15 +342,19 @@ function getInternalPlugins(_options: C15TOptions): C15TPlugin[] {
  * @returns An array of trusted origin URLs
  */
 function getTrustedOrigins(options: C15TOptions<C15TPlugin[]>): string[] {
-	const baseURL = getBaseURL(options.baseURL, options.basePath);
+	const baseUrlStr = options.baseURL as string | undefined;
+	const basePathStr = options.basePath as string | undefined;
+	const baseURL = getBaseURL(baseUrlStr, basePathStr);
+
 	if (!baseURL) {
 		return [];
 	}
 
 	const trustedOrigins = [new URL(baseURL).origin];
 
-	if (options.trustedOrigins && Array.isArray(options.trustedOrigins)) {
-		trustedOrigins.push(...options.trustedOrigins);
+	const optionOrigins = options.trustedOrigins as string[] | undefined;
+	if (optionOrigins && Array.isArray(optionOrigins)) {
+		trustedOrigins.push(...optionOrigins);
 	}
 
 	const envTrustedOrigins = env.C15T_TRUSTED_ORIGINS;
