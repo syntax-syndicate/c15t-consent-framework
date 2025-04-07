@@ -3,8 +3,10 @@ import { createHash } from 'node:crypto';
 import { getWithHooks } from '~/pkgs/data-model';
 import type { Where } from '~/pkgs/db-adapters';
 import type { GenericEndpointContext, RegistryContext } from '~/pkgs/types';
+
 import { validateEntityOutput } from '../definition';
 import type { ConsentPolicy, PolicyType } from './schema';
+import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 
 /**
  * Generates placeholder content for a policy with its hash.
@@ -114,8 +116,12 @@ export function policyRegistry({ adapter, ...ctx }: RegistryContext) {
 			});
 
 			if (!createdPolicy) {
-				throw new Error(
-					'Failed to create consent policy - operation returned null'
+				throw new DoubleTieError(
+					'Failed to create consent policy - operation returned null',
+					{
+						code: ERROR_CODES.INTERNAL_SERVER_ERROR,
+						status: 500,
+					}
 				);
 			}
 
