@@ -13,16 +13,14 @@ import type { EntityName } from './pkgs/data-model/schema/types';
 import {
 	ERROR_CODES,
 	type SDKResult,
+	type TelemetryConfig,
+	createTelemetryOptions,
 	fail,
 	failAsync,
 	ok,
 	promiseToResult,
 } from './pkgs/results';
-import { setTelemetrySdk } from './pkgs/telemetry';
-import {
-	type TelemetryConfig,
-	createTelemetryOptions,
-} from './pkgs/telemetry/utils';
+
 import type { DoubleTieOptions } from './pkgs/types/options';
 import { createRegistry } from './schema/create-registry';
 import { getConsentTables } from './schema/definition';
@@ -139,9 +137,6 @@ export const init = async <P extends C15TPlugin[]>(
 					resource,
 					traceExporter,
 				});
-
-				// Share the SDK reference with the telemetry module so shutdown can work
-				setTelemetrySdk(telemetrySdk);
 
 				telemetrySdk.start();
 				logger.info('Telemetry successfully initialized');
