@@ -8,31 +8,27 @@
 //------------------------------------------------------------------------------
 // Core API
 //------------------------------------------------------------------------------
-
-/**
- * Core factory function and types for creating c15t instances
- */
-export * from './core';
-
-// Export the C15TInstance type explicitly for easier consumption
-export type { C15TInstance } from './core';
-
-//------------------------------------------------------------------------------
-// Plugins
-//------------------------------------------------------------------------------
-
-/**
- * Geo plugin for jurisdiction-based consent management
- */
-export * from './plugins/geo';
+export { c15tInstance, type C15TInstance } from './core';
 
 //------------------------------------------------------------------------------
 // Types
 //------------------------------------------------------------------------------
-/**
- * All system types bundled under a namespace to avoid conflicts
- */
 export * as Types from './pkgs/types';
 
+export type {
+	C15TContext,
+	C15TOptions,
+	C15TPlugin,
+	InferPluginContexts,
+	ApiPathBase,
+	ApiPath,
+} from './types';
+
 // Export all the response types to make them available for client applications
-export * from './response-types';
+export type {
+	SetConsentResponse,
+	ShowConsentBannerResponse,
+	VerifyConsentResponse,
+	SetConsentRequestBody,
+	VerifyConsentRequestBody,
+} from './response-types';

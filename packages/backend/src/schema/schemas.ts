@@ -1,14 +1,10 @@
 import type { z } from 'zod';
 import {
 	auditLogSchema,
-	consentGeoLocationSchema,
 	consentPolicySchema,
-	consentPurposeJunctionSchema,
 	consentRecordSchema,
 	consentSchema,
-	consentWithdrawalSchema,
 	domainSchema,
-	geoLocationSchema,
 	purposeSchema,
 	subjectSchema,
 } from './index';
@@ -17,14 +13,10 @@ import {
 export const schemas = {
 	auditLog: auditLogSchema,
 	consent: consentSchema,
-	consentGeoLocation: consentGeoLocationSchema,
 	consentPolicy: consentPolicySchema,
 	consentPurpose: purposeSchema,
-	consentPurposeJunction: consentPurposeJunctionSchema,
 	consentRecord: consentRecordSchema,
-	consentWithdrawal: consentWithdrawalSchema,
 	domain: domainSchema,
-	geoLocation: geoLocationSchema,
 	subject: subjectSchema,
 } as const;
 
