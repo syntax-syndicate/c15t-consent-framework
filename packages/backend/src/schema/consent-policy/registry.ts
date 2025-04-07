@@ -4,9 +4,9 @@ import { getWithHooks } from '~/pkgs/data-model';
 import type { Where } from '~/pkgs/db-adapters';
 import type { GenericEndpointContext, RegistryContext } from '~/pkgs/types';
 
+import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import { validateEntityOutput } from '../definition';
 import type { ConsentPolicy, PolicyType } from './schema';
-import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 
 /**
  * Generates placeholder content for a policy with its hash.
