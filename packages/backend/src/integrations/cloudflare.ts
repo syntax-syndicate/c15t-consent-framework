@@ -1,6 +1,5 @@
 import type { C15TInstance } from '~/core';
 import { ERROR_CODES } from '~/pkgs/results';
-import type { C15TContext } from '~/types';
 
 /**
  * Convert a c15t handler to a Cloudflare Worker handler.
@@ -39,6 +38,7 @@ export function toCloudflareHandler(instance: C15TInstance) {
 
 			// Extract the path and rewrite for c15t routing
 			const originalUrl = new URL(request.url);
+
 			let pathWithoutBase = originalUrl.pathname;
 
 			// Handle CORS preflight requests directly
@@ -72,16 +72,16 @@ export function toCloudflareHandler(instance: C15TInstance) {
 					: request.body,
 			});
 
-			// Update baseURL for proper URL generation in responses
-			await updateBaseUrl(request, basePath);
-
 			// Let c15t handle the request
+
 			const result = await instance.handler(rewrittenRequest);
 
 			// Convert c15t response to standard Response with CORS headers
 			return await result.match(
 				// Success case - add CORS headers and return
-				(response) => addCorsHeaders(response, request, instance),
+				(response) => {
+					return addCorsHeaders(response, request, instance);
+				},
 				// Error case - create an error response with CORS headers
 				(error) => {
 					const status = error.statusCode || 500;
@@ -107,6 +107,7 @@ export function toCloudflareHandler(instance: C15TInstance) {
 			);
 		} catch (error) {
 			// Basic error handling
+
 			const errorResponse = new Response(
 				JSON.stringify({
 					error: true,
@@ -197,48 +198,71 @@ export function toCloudflareHandler(instance: C15TInstance) {
 			return false;
 		}
 
-		// If no trusted origins are defined, none are trusted
+		// Get trusted origins from options
 		const { trustedOrigins = [] } = instance.options || {};
 
+		// Normalize trustedOrigins to array of strings
+		let originsArray: string[] = [];
+
+		if (Array.isArray(trustedOrigins)) {
+			// Handle potential nested array from env vars: ["localhost"] becomes ["localhost"]
+			originsArray = trustedOrigins.map((item) => {
+				// If item is a string that looks like an array element (has quotes and brackets)
+				if (
+					typeof item === 'string' &&
+					((item.startsWith('"') && item.endsWith('"')) ||
+						(item.startsWith('[') && item.endsWith(']')))
+				) {
+					try {
+						const parsed = JSON.parse(item);
+						return typeof parsed === 'string' ? parsed : item;
+					} catch {
+						return item;
+					}
+				}
+				return item;
+			});
+		} else if (typeof trustedOrigins === 'string') {
+			// Try to parse as JSON if it looks like an array
+			if (
+				(trustedOrigins as string).startsWith('[') &&
+				(trustedOrigins as string).endsWith(']')
+			) {
+				try {
+					const parsed = JSON.parse(trustedOrigins as string);
+					originsArray = Array.isArray(parsed) ? parsed : [trustedOrigins];
+				} catch {
+					originsArray = [trustedOrigins];
+				}
+			} else {
+				originsArray = [trustedOrigins];
+			}
+		}
+
 		// If wildcard is included, all origins are trusted
-		if (trustedOrigins.includes('*')) {
+		if (originsArray.includes('*')) {
 			return true;
 		}
 
-		// Check if origin is in trusted list
-		return trustedOrigins.includes(origin);
-	}
-
-	/**
-	 * Update baseUrl in c15t context
-	 */
-	async function updateBaseUrl(
-		request: Request,
-		basePath: string
-	): Promise<void> {
-		if (!instance.$context) {
-			return;
+		// 1. Check exact match
+		const isExactMatch = originsArray.includes(origin);
+		if (isExactMatch) {
+			return true;
 		}
 
+		// 2. Check domain-based matching
 		try {
-			const contextResult = await instance.$context;
+			const originUrl = new URL(origin);
+			const originHostname = originUrl.hostname;
 
-			contextResult.match(
-				(context: C15TContext) => {
-					const url = new URL(request.url);
-					const baseURL = `${url.protocol}//${url.host}${basePath}`;
+			// Check if any trusted origin is just the hostname (without protocol)
+			if (originsArray.includes(originHostname)) {
+				return true;
+			}
 
-					if (!context.baseURL || context.baseURL !== baseURL) {
-						context.baseURL = baseURL;
-						if (context.options) {
-							context.options.baseURL = baseURL;
-						}
-					}
-				},
-				() => {} // Ignore errors
-			);
+			return false;
 		} catch {
-			// Ignore errors
+			return false;
 		}
 	}
 }
