@@ -3,9 +3,9 @@
 import {
 	type ComplianceRegion,
 	type PrivacyConsentState,
-	configureConsentManager,
 	createConsentManagerStore,
 	defaultTranslationConfig,
+	configureConsentManager
 } from 'c15t';
 import { useEffect, useMemo, useState } from 'react';
 import { ConsentStateContext } from '../context/consent-manager-context';
@@ -17,10 +17,6 @@ import {
 
 import { GlobalThemeContext } from '../context/theme-context';
 import { useColorScheme } from '../hooks/use-color-scheme';
-/**
- * @packageDocumentation
- * Provider component for consent management functionality.
- */
 
 /**
  * Provider component for consent management functionality.
@@ -55,11 +51,11 @@ export function ConsentManagerProvider({
 }: ConsentManagerProviderProps) {
 	// Extract options with defaults
 	const {
-		// Get store options
+		mode,
+		backendURL,
+		callbacks,
 		store = {},
-		// Get translation config
 		translations: translationConfig,
-		// Get React UI options
 		react = {},
 	} = options;
 
@@ -74,6 +70,10 @@ export function ConsentManagerProvider({
 		noStyle = false,
 	} = react;
 
+	// Explicitly memoize each primitive value that should trigger recreation
+	const memoizedBackendURL = useMemo(() => backendURL, [backendURL]);
+	const memoizedMode = useMemo(() => mode, [mode]);
+
 	const preparedTranslationConfig = useMemo(() => {
 		const mergedConfig = mergeTranslationConfigs(
 			defaultTranslationConfig,
@@ -87,14 +87,50 @@ export function ConsentManagerProvider({
 		return { ...mergedConfig, defaultLanguage };
 	}, [translationConfig]);
 
-	// Create the consent manager
-	const consentManager = useMemo(() => {
-		if (!options) {
-			throw new Error('ConsentManagerProvider requires options to be provided');
+	// Create strongly-typed options with the memoized values
+	const typeSafeOptions = useMemo(() => {
+		// Start with common options
+		const baseOptions = { 
+			callbacks, 
+			store,
+			translations: translationConfig,
+			react
+		};
+
+		// Handle different modes with proper typing
+		if (memoizedMode === 'offline') {
+			return {
+				...baseOptions,
+				mode: 'offline' as const
+			};
 		}
-		const { store, translations, react, ...coreOpts } = options;
-		return configureConsentManager(coreOpts);
-	}, [options]);
+		
+		if (memoizedMode === 'c15t' && memoizedBackendURL) {
+			return {
+				...baseOptions,
+				mode: 'c15t' as const,
+				backendURL: memoizedBackendURL
+			};
+		}
+		
+		// Default to either c15t with backendURL or offline
+		if (memoizedBackendURL) {
+			return {
+				...baseOptions,
+				backendURL: memoizedBackendURL
+			};
+		}
+		
+		return {
+			...baseOptions,
+			mode: 'offline' as const
+		};
+	}, [memoizedMode, memoizedBackendURL, callbacks, store, translationConfig, react]);
+
+	// Use the stabilized options
+	const consentManager = useMemo(() => {
+		return configureConsentManager(typeSafeOptions);
+	}, [typeSafeOptions]);
 
 	// Determine if using c15t.dev domain at the provider level
 	const isConsentDomain = useMemo(() => {
@@ -104,12 +140,12 @@ export function ConsentManagerProvider({
 
 		// More comprehensive check for c15t domain
 		const isC15tDomain =
-			options.mode === 'c15t' &&
-			(options.backendURL?.includes('c15t.dev') ||
+			(memoizedMode === 'c15t' || memoizedMode === 'offline') &&
+			(backendURL?.includes('c15t.dev') ||
 				window.location.hostname.includes('c15t.dev'));
 
 		return Boolean(isC15tDomain);
-	}, [options]);
+	}, [memoizedMode, backendURL]);
 
 	// Create a stable reference to the store with prepared translation config
 	const consentStore = useMemo(() => {
@@ -168,29 +204,46 @@ export function ConsentManagerProvider({
 		};
 	}, [consentStore, initialGdprTypes, initialComplianceSettings]);
 
+	// Set the color scheme
+	useColorScheme(colorScheme);
+
 	// Memoize the context value to prevent unnecessary re-renders
 	const contextValue = useMemo(
 		() => ({
 			state,
 			store: consentStore,
 			manager: consentManager,
+			theme,
+			disableAnimation,
+			scrollLock,
+			trapFocus,
+			colorScheme,
+			noStyle,
 		}),
-		[state, consentStore, consentManager]
+		[
+			state,
+			consentStore,
+			consentManager,
+			theme,
+			disableAnimation,
+			scrollLock,
+			trapFocus,
+			colorScheme,
+			noStyle,
+		]
 	);
 
-	// Pass theme context values
-	const themeContextValue = useMemo(() => {
-		return {
+	// Memoize the theme context value
+	const themeContextValue = useMemo(
+		() => ({
 			theme,
 			noStyle,
 			disableAnimation,
 			scrollLock,
 			trapFocus,
-		};
-	}, [theme, noStyle, disableAnimation, scrollLock, trapFocus]);
-
-	// Set the color scheme
-	useColorScheme(colorScheme);
+		}),
+		[theme, noStyle, disableAnimation, scrollLock, trapFocus]
+	);
 
 	return (
 		<ConsentStateContext.Provider value={contextValue}>
