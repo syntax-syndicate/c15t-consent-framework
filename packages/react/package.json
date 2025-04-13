@@ -72,6 +72,7 @@
 		"zustand": "^5.0.3"
 	},
 	"devDependencies": {
+		"@c15t/backend": "workspace:*",
 		"@c15t/typescript-config": "workspace:*"
 	},
 	"peerDependencies": {

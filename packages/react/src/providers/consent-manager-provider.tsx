@@ -9,14 +9,13 @@ import {
 } from 'c15t';
 import { useEffect, useMemo, useState } from 'react';
 import { ConsentStateContext } from '../context/consent-manager-context';
+import { GlobalThemeContext } from '../context/theme-context';
+import { useColorScheme } from '../hooks/use-color-scheme';
 import type { ConsentManagerProviderProps } from '../types/consent-manager';
 import {
 	detectBrowserLanguage,
 	mergeTranslationConfigs,
 } from '../utils/translations';
-
-import { GlobalThemeContext } from '../context/theme-context';
-import { useColorScheme } from '../hooks/use-color-scheme';
 
 /**
  * Provider component for consent management functionality.
@@ -70,10 +69,6 @@ export function ConsentManagerProvider({
 		noStyle = false,
 	} = react;
 
-	// Explicitly memoize each primitive value that should trigger recreation
-	const memoizedBackendURL = useMemo(() => backendURL, [backendURL]);
-	const memoizedMode = useMemo(() => mode, [mode]);
-
 	const preparedTranslationConfig = useMemo(() => {
 		const mergedConfig = mergeTranslationConfigs(
 			defaultTranslationConfig,
@@ -87,57 +82,34 @@ export function ConsentManagerProvider({
 		return { ...mergedConfig, defaultLanguage };
 	}, [translationConfig]);
 
-	// Create strongly-typed options with the memoized values
-	const typeSafeOptions = useMemo(() => {
-		// Start with common options
-		const baseOptions = {
+	// Directly use configureConsentManager with the original options
+	const consentManager = useMemo(() => {
+		// Create the appropriate client options based on mode
+		if (mode === 'offline') {
+			return configureConsentManager({
+				mode: 'offline',
+				callbacks,
+				store,
+			});
+		}
+
+		if (mode === 'custom' && 'endpointHandlers' in options) {
+			return configureConsentManager({
+				mode: 'custom',
+				endpointHandlers: options.endpointHandlers,
+				callbacks,
+				store,
+			});
+		}
+
+		// Default to c15t mode
+		return configureConsentManager({
+			mode: 'c15t',
+			backendURL: backendURL || '/api/c15t',
 			callbacks,
 			store,
-			translations: translationConfig,
-			react,
-		};
-
-		// Handle different modes with proper typing
-		if (memoizedMode === 'offline') {
-			return {
-				...baseOptions,
-				mode: 'offline' as const,
-			};
-		}
-
-		if (memoizedMode === 'c15t' && memoizedBackendURL) {
-			return {
-				...baseOptions,
-				mode: 'c15t' as const,
-				backendURL: memoizedBackendURL,
-			};
-		}
-
-		// Default to either c15t with backendURL or offline
-		if (memoizedBackendURL) {
-			return {
-				...baseOptions,
-				backendURL: memoizedBackendURL,
-			};
-		}
-
-		return {
-			...baseOptions,
-			mode: 'offline' as const,
-		};
-	}, [
-		memoizedMode,
-		memoizedBackendURL,
-		callbacks,
-		store,
-		translationConfig,
-		react,
-	]);
-
-	// Use the stabilized options
-	const consentManager = useMemo(() => {
-		return configureConsentManager(typeSafeOptions);
-	}, [typeSafeOptions]);
+		});
+	}, [mode, backendURL, callbacks, store, options]);
 
 	// Determine if using c15t.dev domain at the provider level
 	const isConsentDomain = useMemo(() => {
@@ -147,12 +119,12 @@ export function ConsentManagerProvider({
 
 		// More comprehensive check for c15t domain
 		const isC15tDomain =
-			(memoizedMode === 'c15t' || memoizedMode === 'offline') &&
+			(mode === 'c15t' || mode === 'offline') &&
 			(backendURL?.includes('c15t.dev') ||
 				window.location.hostname.includes('c15t.dev'));
 
 		return Boolean(isC15tDomain);
-	}, [memoizedMode, backendURL]);
+	}, [mode, backendURL]);
 
 	// Create a stable reference to the store with prepared translation config
 	const consentStore = useMemo(() => {

@@ -534,6 +534,9 @@ importers:
         specifier: ^5.0.3
         version: 5.0.3(@types/react@19.1.1)(react@19.1.0)
     devDependencies:
+      '@c15t/backend':
+        specifier: 0.0.1-rc.21
+        version: 0.0.1-rc.21(@cloudflare/workers-types@4.20250410.0)(@electric-sql/pglite@0.2.17)(@libsql/client@0.15.3)(@prisma/client@6.6.0(prisma@6.6.0(typescript@5.8.3))(typescript@5.8.3))(@types/better-sqlite3@7.6.13)(@types/pg@8.11.12)(prisma@6.6.0(typescript@5.8.3))
       '@c15t/typescript-config':
         specifier: workspace:*
         version: link:../../internals/typescript-config
@@ -985,6 +988,9 @@ packages:
 
   '@bundled-es-modules/tough-cookie@0.1.6':
     resolution: {integrity: sha512-dvMHbL464C0zI+Yqxbz6kZ5TOEp7GLW+pry/RWndAR8MJQAXZ2rPmIs8tziTZjeIyhSNZgZbCePtfSbdWqStJw==}
+
+  '@c15t/backend@0.0.1-rc.21':
+    resolution: {integrity: sha512-2zaRKfgkmt221E/os8G3o4mK9szFBBaaz9BlxsFa/U+OO+o5ixwjAi34mdmjIEgYkmqsbSi+yaHX0gAW1wrBrw==}
 
   '@changesets/apply-release-plan@7.0.10':
     resolution: {integrity: sha512-wNyeIJ3yDsVspYvHnEz1xQDq18D9ifed3lI+wxRQRK4pArUcuHgCTrHv0QRnnwjhVCQACxZ+CBih3wgOct6UXw==}
@@ -3854,9 +3860,6 @@ packages:
 
   '@types/node@12.20.55':
     resolution: {integrity: sha512-J8xLz7q2OFulZ2cyGTLE1TbbZcjpno7FaN6zdJNrgAdrJ+DZzh/uFR6YrTb4C+nXakvud8Q4+rbhoIWlYQbUFQ==}
-
-  '@types/node@22.14.0':
-    resolution: {integrity: sha512-Kmpl+z84ILoG+3T/zQFyAJsU6EPTmOCj8/2+83fSN6djd6I4o7uOuGIH6vq3PrjY5BGitSbFuMN18j3iknubbA==}
 
   '@types/node@22.14.1':
     resolution: {integrity: sha512-u0HuPQwe/dHrItgHHpmw3N2fYCR6x4ivMNbPHRkBVP4CvN+kiRrKHWk3i8tXiO/joPwXLMYvF9TTF0eqgHIuOw==}
@@ -8639,6 +8642,50 @@ snapshots:
       tough-cookie: 4.1.4
     optional: true
 
+  '@c15t/backend@0.0.1-rc.21(@cloudflare/workers-types@4.20250410.0)(@electric-sql/pglite@0.2.17)(@libsql/client@0.15.3)(@prisma/client@6.6.0(prisma@6.6.0(typescript@5.8.3))(typescript@5.8.3))(@types/better-sqlite3@7.6.13)(@types/pg@8.11.12)(prisma@6.6.0(typescript@5.8.3))':
+    dependencies:
+      '@opentelemetry/api': 1.9.0
+      '@opentelemetry/resources': 1.30.1(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-node': 0.48.0(@opentelemetry/api@1.9.0)
+      '@opentelemetry/sdk-trace-base': 1.30.1(@opentelemetry/api@1.9.0)
+      base-x: 5.0.1
+      better-sqlite3: 11.9.1
+      defu: 6.1.4
+      drizzle-orm: 0.41.0(@cloudflare/workers-types@4.20250410.0)(@electric-sql/pglite@0.2.17)(@libsql/client@0.15.3)(@opentelemetry/api@1.9.0)(@prisma/client@6.6.0(prisma@6.6.0(typescript@5.8.3))(typescript@5.8.3))(@types/better-sqlite3@7.6.13)(@types/pg@8.11.12)(better-sqlite3@11.9.1)(kysely@0.27.6)(mysql2@3.14.0)(pg@8.14.1)(prisma@6.6.0(typescript@5.8.3))
+      h3: 1.15.1
+      kysely: 0.27.6
+      mysql2: 3.14.0
+      neverthrow: 8.2.0
+      pg: 8.14.1
+      superjson: 2.2.2
+      zod: 3.24.2
+    transitivePeerDependencies:
+      - '@aws-sdk/client-rds-data'
+      - '@cloudflare/workers-types'
+      - '@electric-sql/pglite'
+      - '@libsql/client'
+      - '@libsql/client-wasm'
+      - '@neondatabase/serverless'
+      - '@op-engineering/op-sqlite'
+      - '@planetscale/database'
+      - '@prisma/client'
+      - '@tidbcloud/serverless'
+      - '@types/better-sqlite3'
+      - '@types/pg'
+      - '@types/sql.js'
+      - '@vercel/postgres'
+      - '@xata.io/client'
+      - bun-types
+      - expo-sqlite
+      - gel
+      - knex
+      - pg-native
+      - postgres
+      - prisma
+      - sql.js
+      - sqlite3
+      - supports-color
+
   '@changesets/apply-release-plan@7.0.10':
     dependencies:
       '@changesets/config': 3.1.1
@@ -11574,10 +11621,6 @@ snapshots:
 
   '@types/node@12.20.55': {}
 
-  '@types/node@22.14.0':
-    dependencies:
-      undici-types: 6.21.0
-
   '@types/node@22.14.1':
     dependencies:
       undici-types: 6.21.0
@@ -13505,7 +13548,7 @@ snapshots:
 
   jest-worker@27.5.1:
     dependencies:
-      '@types/node': 22.14.0
+      '@types/node': 22.14.1
       merge-stream: 2.0.0
       supports-color: 8.1.1
 
