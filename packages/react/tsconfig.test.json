@@ -7,9 +7,13 @@
 	},
 	"include": [
 		"src/**/__tests__/**/*.ts",
+		"src/**/__tests__/**/*.tsx",
 		"src/**/*.test.ts",
+		"src/**/*.test.tsx",
 		"src/**/*.spec.ts",
-		"src/**/*.browser.test.ts"
+		"src/**/*.spec.tsx",
+		"src/**/*.browser.test.ts",
+		"src/**/*.browser.test.tsx"
 	],
 	"exclude": ["node_modules"]
 }

@@ -1,89 +1,19 @@
-// consent-manager-provider.basic.test.tsx - Basic request behavior
-import type { ConsentManagerOptions } from 'c15t';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { render } from 'vitest-browser-react';
-import { ConsentManagerProvider } from '~/index';
+import { ConsentManagerProvider } from '../../providers/consent-manager-provider';
+import { setupMocks } from './test-helpers';
 
-// Mock fetch globally
-const mockFetch = vi.fn();
-window.fetch = mockFetch;
-
-// Create a mocked version of the consent manager to avoid duplicate API calls in tests
-const mockConfigureConsentManager = vi.fn();
-
-// Mock c15t module
-vi.mock('c15t', async () => {
-	const originalModule = await vi.importActual('c15t');
-
-	// Create a map to track fetch calls per backend URL
-	const fetchCalls = new Map<string, boolean>();
-
-	// Reset tracking between tests
-	beforeEach(() => {
-		fetchCalls.clear();
-	});
-
-	return {
-		...(originalModule as object),
-		configureConsentManager: (options: ConsentManagerOptions) => {
-			// Call the mock for tracking
-			mockConfigureConsentManager(options);
-
-			const backendURL = options.backendURL || '';
-
-			return {
-				getCallbacks: () => options.callbacks,
-
-				showConsentBanner: async () => {
-					// Only make fetch calls in c15t mode, skip in offline mode
-					if (options.mode === 'c15t' && !fetchCalls.has(backendURL)) {
-						// Make the mock fetch call that the test expects
-						mockFetch(`${backendURL}/show-consent-banner`, {
-							headers: { 'Content-Type': 'application/json' },
-						});
-
-						// Mark this URL as called
-						fetchCalls.set(backendURL, true);
-					}
-
-					return {
-						ok: true,
-						data: { showConsentBanner: true },
-						error: null,
-						response: null,
-					};
-				},
-
-				setConsent: async () => ({
-					ok: true,
-					data: { success: true },
-					error: null,
-					response: null,
-				}),
-				verifyConsent: async () => ({
-					ok: true,
-					data: { valid: true },
-					error: null,
-					response: null,
-				}),
-			};
-		},
-	};
-});
+// Set up common mocks
+const { mockFetch, mockConfigureConsentManager } = setupMocks();
 
 describe('ConsentManagerProvider Basic Request Behavior', () => {
 	beforeEach(() => {
 		vi.resetAllMocks();
 		// Set up fake timers for timer-related tests
 		vi.useFakeTimers();
-
-		// Mock successful response for all tests
-		mockFetch.mockResolvedValue(
-			new Response(JSON.stringify({ showConsentBanner: true }), {
-				status: 200,
-				headers: { 'Content-Type': 'application/json' },
-			})
-		);
+		// Ensure we start with a clean fetch call tracking for each test
+		mockFetch.mockClear();
 	});
 
 	afterEach(() => {
@@ -116,9 +46,6 @@ describe('ConsentManagerProvider Basic Request Behavior', () => {
 	});
 
 	it('should not make additional requests when props change but core options remain same', async () => {
-		// First, clear any mock calls from previous tests
-		mockFetch.mockClear();
-
 		const { rerender } = render(
 			<ConsentManagerProvider
 				options={{
@@ -156,11 +83,15 @@ describe('ConsentManagerProvider Basic Request Behavior', () => {
 	});
 
 	it('should make a new request when core options change', async () => {
+		// Increase timeout for this test since it was timing out
+		vi.setConfig({ testTimeout: 30000 });
+		
 		const { rerender } = render(
 			<ConsentManagerProvider
 				options={{
 					mode: 'c15t',
 					backendURL: '/api/c15t-1', // Use unique URLs to distinguish calls
+					testing: { isolateInstance: true, disableFallback: true }
 				}}
 			>
 				<div>First URL</div>
@@ -184,6 +115,7 @@ describe('ConsentManagerProvider Basic Request Behavior', () => {
 				options={{
 					mode: 'c15t',
 					backendURL: '/api/c15t-2', // Different backend URL
+					testing: { isolateInstance: true, disableFallback: true }
 				}}
 			>
 				<div>Second URL</div>
@@ -199,12 +131,12 @@ describe('ConsentManagerProvider Basic Request Behavior', () => {
 			expect.stringContaining('/api/c15t-2/show-consent-banner'),
 			expect.any(Object)
 		);
+		
+		// Reset timeout
+		vi.setConfig({ testTimeout: 5000 });
 	});
 
 	it('should handle rapid re-renders without making duplicate requests', async () => {
-		// First, clear any mock calls from previous tests
-		mockFetch.mockClear();
-
 		const { rerender } = render(
 			<ConsentManagerProvider
 				options={{

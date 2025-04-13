@@ -3,7 +3,6 @@
 	"compilerOptions": {
 		"moduleResolution": "bundler",
 		"baseUrl": ".",
-		"types": ["@vitest/browser/matchers"],
 		"paths": {
 			"~/*": ["./src/*"]
 		}
