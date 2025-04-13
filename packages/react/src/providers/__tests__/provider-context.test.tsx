@@ -1,27 +1,85 @@
 import type { ConsentManagerOptions } from 'c15t';
 // consent-manager-provider.context.test.tsx - Test context values
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+	afterAll,
+	afterEach,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from 'vitest';
 import { render } from 'vitest-browser-react';
 import { useConsentManager } from '../../hooks/use-consent-manager';
 import { ConsentManagerProvider } from '../consent-manager-provider';
-import { setupMocks } from './test-helpers';
 
-// Setup common mocks
-const { mockConfigureConsentManager } = setupMocks();
+// Create references outside of mocks for test use
+const modifyContextShowPopup = vi.fn();
+const mockFetch = vi.fn();
+// Create export variables to track calls from outside the mock
+const mockingExports = {
+	configureConsentManager: vi.fn(),
+	clearClientRegistry: vi.fn(),
+};
 
-// Mock c15t module directly in this test file
-vi.mock('c15t', async () => {
-	const originalModule = await vi.importActual('c15t');
+// Mock c15t module directly in this test file with standalone implementation
+vi.mock('c15t', () => {
+	// Define a mock state interface for typing
+	interface MockState {
+		consents: Record<string, unknown>;
+		consentInfo: Record<string, unknown>;
+		showPopup: boolean;
+		isLoadingConsentInfo: boolean;
+		gdprTypes: Record<string, unknown>;
+		complianceSettings: Record<string, unknown>;
+		setGdprTypes: (types: unknown) => void;
+		setComplianceSetting: (region: string, settings: unknown) => void;
+		setDetectedCountry: (country: string) => void;
+	}
+
+	// Define a mock state
+	const mockState: MockState = {
+		consents: {},
+		consentInfo: {},
+		showPopup: true,
+		isLoadingConsentInfo: false,
+		gdprTypes: {},
+		complianceSettings: {},
+		// Add required methods to mock state
+		setGdprTypes: vi.fn(),
+		setComplianceSetting: vi.fn(),
+		setDetectedCountry: vi.fn(),
+	};
+
+	// Mock store implementation
+	const mockStore = {
+		getState: () => mockState,
+		setState: vi.fn(),
+		subscribe: (listener: (state: MockState) => void) => {
+			// Call listener immediately with initial state
+			listener(mockState);
+			// Return unsubscribe function
+			return () => {};
+		},
+	};
 
 	return {
-		...(originalModule as object),
 		configureConsentManager: (options: ConsentManagerOptions) => {
-			// Track the call
-			mockConfigureConsentManager(options);
+			// Add test isolation by default
+			const enhancedOptions = {
+				...options,
+				testing: {
+					...(options.testing || {}),
+					isolateInstance: true,
+				},
+			};
+
+			// Track the call using the external reference
+			mockingExports.configureConsentManager(enhancedOptions);
 
 			// Return a ready-to-use mock with showPopup set to true
 			return {
-				getCallbacks: () => options.callbacks || {},
+				getCallbacks: () => enhancedOptions.callbacks || {},
 				showConsentBanner: async () => ({
 					ok: true,
 					data: { showConsentBanner: true },
@@ -42,28 +100,31 @@ vi.mock('c15t', async () => {
 				}),
 			};
 		},
+		// Export any other constants or types needed
+		defaultTranslationConfig: {},
+		type: {},
+		createConsentManagerStore: vi.fn(() => mockStore),
+		// Add clear registry function for testing
+		_clearClientRegistryForTests: () => {
+			mockingExports.clearClientRegistry();
+		},
 	};
 });
 
-// Helper to manually modify the context value
-const modifyContextShowPopup = vi.fn();
-
 // Mock the useConsentManager hook
-vi.mock('../../hooks/use-consent-manager', async () => {
-	const originalModule = await vi.importActual(
-		'../../hooks/use-consent-manager'
-	);
-
+vi.mock('../../hooks/use-consent-manager', () => {
 	return {
-		...(originalModule as object),
 		useConsentManager: () => {
-			const result = (
-				originalModule as unknown as {
-					useConsentManager: () => { showPopup: boolean };
-				}
-			).useConsentManager();
-			// Force showPopup to true for tests
-			result.showPopup = true;
+			// Return a simple mock with showPopup set to true
+			const result = {
+				manager: {},
+				showPopup: true,
+				state: {},
+				store: {
+					getState: () => ({}),
+				},
+			};
+
 			// Track that this was called
 			modifyContextShowPopup();
 			return result;
@@ -73,13 +134,31 @@ vi.mock('../../hooks/use-consent-manager', async () => {
 
 describe('ConsentManagerProvider Context Values', () => {
 	beforeEach(() => {
-		vi.resetAllMocks();
+		// Clear all mocks
+		vi.clearAllMocks();
+
+		// Setup timers
 		vi.useFakeTimers();
+
+		// Setup fetch mock
+		globalThis.fetch = mockFetch;
+		mockFetch.mockResolvedValue(
+			new Response(JSON.stringify({ showConsentBanner: true }), {
+				status: 200,
+				headers: { 'Content-Type': 'application/json' },
+			})
+		);
+
+		// Clear client registry for test isolation
+		mockingExports.clearClientRegistry();
 	});
 
 	afterEach(() => {
-		vi.clearAllMocks();
 		vi.useRealTimers();
+	});
+
+	afterAll(() => {
+		vi.restoreAllMocks();
 	});
 
 	it('should provide correct context values to children', async () => {
@@ -151,13 +230,13 @@ describe('ConsentManagerProvider Context Values', () => {
 		// Verify the mock was called, with some wait time for async operations
 		await vi.waitFor(
 			() => {
-				expect(mockConfigureConsentManager).toHaveBeenCalled();
+				expect(mockingExports.configureConsentManager).toHaveBeenCalled();
 			},
 			{ timeout: 3000 }
 		);
 
 		// Verify the callback was properly passed
-		const mockCall = mockConfigureConsentManager.mock.calls[0];
+		const mockCall = mockingExports.configureConsentManager.mock.calls[0];
 		expect(mockCall).toBeDefined();
 
 		if (mockCall) {

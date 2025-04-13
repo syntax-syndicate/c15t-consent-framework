@@ -86,6 +86,14 @@ export default defineConfig({
 			'pkgs/migrations/index': ['./src/pkgs/migrations/index.ts'],
 			'pkgs/types/index': ['./src/pkgs/types/index.ts'],
 		},
+		exclude: [
+			'**/__tests__/**',
+			'**/*.test.ts',
+			'**/*.test.tsx',
+			'**/*.spec.ts',
+			'**/*.spec.tsx',
+			'**/*.browser.test.ts',
+		],
 	},
 	lib: [
 		{

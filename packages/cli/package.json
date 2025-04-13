@@ -4,9 +4,9 @@
 	"description": "The CLI for c15t",
 	"exports": "./dist/index.mjs",
 	"main": "./dist/index.mjs",
-	"module": "dist/index.mjs",
+	"module": "./dist/index.mjs",
 	"bin": {
-		"cli": "dist/index.mjs"
+		"cli": "./dist/index.mjs"
 	},
 	"files": ["dist"],
 	"scripts": {

@@ -36,10 +36,24 @@ const DEFAULT_CLIENT_MODE = 'c15t';
 const clientRegistry = new Map<string, ConsentManagerInterface>();
 
 /**
+ * Clears the client registry - only use in tests
+ * @internal
+ */
+export function _clearClientRegistryForTests(): void {
+	clientRegistry.clear();
+}
+
+/**
  * Create a stable cache key for client instances
  * @internal
  */
 function getClientCacheKey(options: ConsentManagerOptions): string {
+	// Check for test isolation flag to bypass cache in test environments
+	if (options.testing?.isolateInstance) {
+		// Add a unique timestamp to prevent caching in tests
+		return `test-isolated-${Date.now()}-${Math.random()}`;
+	}
+
 	if (options.mode === 'offline') {
 		return 'offline';
 	}
@@ -52,8 +66,16 @@ function getClientCacheKey(options: ConsentManagerOptions): string {
 		return `custom:${handlerKeys}`;
 	}
 
+	// For c15t clients, include headers in the cache key if present
+	let headersPart = '';
+	if ('headers' in options && options.headers) {
+		// Sort header keys for a stable key
+		const headerKeys = Object.keys(options.headers).sort();
+		headersPart = `:headers:${headerKeys.map((k) => `${k}=${options.headers?.[k]}`).join(',')}`;
+	}
+
 	// For c15t clients, use the backendURL as the key
-	return `c15t:${options.backendURL || ''}`;
+	return `c15t:${options.backendURL || ''}${headersPart}`;
 }
 
 /**
@@ -146,6 +168,17 @@ export type ConsentManagerOptions = {
 	 */
 	callbacks?: ConsentManagerCallbacks;
 	store?: StoreOptions;
+	/**
+	 * Testing-only options - not for production use
+	 * @internal
+	 */
+	testing?: {
+		/**
+		 * Forces creation of a new client instance, bypassing the registry
+		 * This is useful for tests that need isolation
+		 */
+		isolateInstance?: boolean;
+	};
 } & (CustomClientOptions | C15TClientOptions | OfflineClientOptions);
 
 /**
@@ -218,10 +251,32 @@ export function configureConsentManager(
 ): ConsentManagerInterface {
 	const cacheKey = getClientCacheKey(options);
 
+	// Debug: Log the options received by configureConsentManager
+	console.log('configureConsentManager options:', options);
+
 	// Return existing client if found
 	if (clientRegistry.has(cacheKey)) {
 		const existingClient = clientRegistry.get(cacheKey);
 		if (existingClient) {
+			// If the existing client is a C15tClient and new options include headers,
+			// update the client's headers
+			if (
+				options.mode !== 'offline' &&
+				options.mode !== 'custom' &&
+				'headers' in options &&
+				options.headers
+			) {
+				// Update headers if the client is a C15tClient
+				if (existingClient instanceof C15tClient) {
+					// @ts-expect-error: headers is a private property
+					existingClient.headers = {
+						'Content-Type': 'application/json',
+						...options.headers,
+					};
+					console.log('Updated cached client headers:', options.headers);
+				}
+			}
+
 			return new Proxy(existingClient, {
 				get(target, prop) {
 					if (prop === 'getCallbacks') {
@@ -260,6 +315,13 @@ export function configureConsentManager(
 				callbacks?: ConsentManagerCallbacks;
 				retryConfig?: RetryConfig;
 			};
+
+			// Debug: Log the c15tOptions extracted from options
+			console.log('Creating C15tClient with options:', {
+				backendURL: c15tOptions.backendURL || DEFAULT_BACKEND_URL,
+				headers: c15tOptions.headers,
+			});
+
 			client = new C15tClient({
 				backendURL: c15tOptions.backendURL || DEFAULT_BACKEND_URL,
 				headers: c15tOptions.headers,

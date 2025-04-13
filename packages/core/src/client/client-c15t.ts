@@ -165,10 +165,14 @@ export class C15tClient implements ConsentManagerInterface {
 			? options.backendURL.slice(0, -1)
 			: options.backendURL;
 
+		// Ensure we have a plain object for headers with Content-Type and custom headers
 		this.headers = {
 			'Content-Type': 'application/json',
-			...options.headers,
+			...(options.headers || {}),
 		};
+
+		// Log headers for debugging
+		console.log('C15tClient initialized with headers:', this.headers);
 
 		this.customFetch = options.customFetch;
 		this.callbacks = options.callbacks;
@@ -284,15 +288,10 @@ export class C15tClient implements ConsentManagerInterface {
 		const finalRetryConfig: RetryConfig = {
 			...this.retryConfig,
 			...(options?.retryConfig || {}),
-			retryableStatusCodes:
-				options?.retryConfig?.retryableStatusCodes ??
-				this.retryConfig.retryableStatusCodes ??
-				DEFAULT_RETRY_CONFIG.retryableStatusCodes,
-			nonRetryableStatusCodes:
-				options?.retryConfig?.nonRetryableStatusCodes ??
-				this.retryConfig.nonRetryableStatusCodes ??
-				DEFAULT_RETRY_CONFIG.nonRetryableStatusCodes,
 		};
+
+		// Keep track of the error response from the most recent attempt for maxRetries case
+		let maxRetriesErrorResponse: ResponseContext<ResponseType> | null = null;
 
 		const {
 			maxRetries,
@@ -343,7 +342,7 @@ export class C15tClient implements ConsentManagerInterface {
 				headers: {
 					...this.headers,
 					'X-Request-ID': requestId,
-					...options?.headers,
+					...(options?.headers || {}),
 				},
 				...options?.fetchOptions,
 			};
@@ -553,7 +552,7 @@ export class C15tClient implements ConsentManagerInterface {
 
 		// This should be unreachable with the above logic
 		// But just in case, return the last error we encountered
-		const maxRetriesErrorResponse =
+		maxRetriesErrorResponse =
 			lastErrorResponse ||
 			this.createResponseContext<ResponseType>(
 				false,

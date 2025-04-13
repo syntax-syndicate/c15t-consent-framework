@@ -5,6 +5,14 @@ export default defineConfig({
 	source: {
 		entry: {
 			index: ['./src/**'],
+			exclude: [
+				'**/__tests__/**',
+				'**/*.test.ts',
+				'**/*.test.tsx',
+				'**/*.spec.ts',
+				'**/*.spec.tsx',
+				'**/*.browser.test.ts',
+			],
 		},
 	},
 	lib: [
