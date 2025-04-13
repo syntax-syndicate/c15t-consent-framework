@@ -3,9 +3,9 @@
 import {
 	type ComplianceRegion,
 	type PrivacyConsentState,
+	configureConsentManager,
 	createConsentManagerStore,
 	defaultTranslationConfig,
-	configureConsentManager
 } from 'c15t';
 import { useEffect, useMemo, useState } from 'react';
 import { ConsentStateContext } from '../context/consent-manager-context';
@@ -90,42 +90,49 @@ export function ConsentManagerProvider({
 	// Create strongly-typed options with the memoized values
 	const typeSafeOptions = useMemo(() => {
 		// Start with common options
-		const baseOptions = { 
-			callbacks, 
+		const baseOptions = {
+			callbacks,
 			store,
 			translations: translationConfig,
-			react
+			react,
 		};
 
 		// Handle different modes with proper typing
 		if (memoizedMode === 'offline') {
 			return {
 				...baseOptions,
-				mode: 'offline' as const
+				mode: 'offline' as const,
 			};
 		}
-		
+
 		if (memoizedMode === 'c15t' && memoizedBackendURL) {
 			return {
 				...baseOptions,
 				mode: 'c15t' as const,
-				backendURL: memoizedBackendURL
+				backendURL: memoizedBackendURL,
 			};
 		}
-		
+
 		// Default to either c15t with backendURL or offline
 		if (memoizedBackendURL) {
 			return {
 				...baseOptions,
-				backendURL: memoizedBackendURL
+				backendURL: memoizedBackendURL,
 			};
 		}
-		
+
 		return {
 			...baseOptions,
-			mode: 'offline' as const
+			mode: 'offline' as const,
 		};
-	}, [memoizedMode, memoizedBackendURL, callbacks, store, translationConfig, react]);
+	}, [
+		memoizedMode,
+		memoizedBackendURL,
+		callbacks,
+		store,
+		translationConfig,
+		react,
+	]);
 
 	// Use the stabilized options
 	const consentManager = useMemo(() => {
