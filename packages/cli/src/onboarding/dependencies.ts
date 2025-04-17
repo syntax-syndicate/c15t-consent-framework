@@ -18,7 +18,7 @@ export async function addAndInstallDependenciesViaPM(
 	packageManager: PackageManager
 ): Promise<void> {
 	// Map dependencies to the 'pkg@workspace:*' format
-	const depsToAdd = dependencies.map((dep) => `${dep}@workspace:*`);
+	const depsToAdd = dependencies.map((dep) => `${dep}`);
 
 	if (depsToAdd.length === 0) {
 		// Nothing to add
@@ -71,7 +71,7 @@ export function getManualInstallCommand(
 	dependencies: string[],
 	packageManager: PackageManager
 ): string {
-	const depsToAdd = dependencies.map((dep) => `${dep}@workspace:*`);
+	const depsToAdd = dependencies.map((dep) => `${dep}`);
 
 	switch (packageManager) {
 		case 'npm':

@@ -266,7 +266,7 @@ export async function startOnboarding(
 		let addDeps = false; // Initialize with default value
 		if (dependenciesToAdd.length > 0) {
 			const depsString = dependenciesToAdd
-				.map((d) => color.cyan(`${d}@workspace:*`))
+				.map((d) => color.cyan(d))
 				.join(', ');
 
 			const addDepsSelection = await p.confirm({
