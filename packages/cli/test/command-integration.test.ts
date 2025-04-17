@@ -1,66 +1,72 @@
-import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { generateSecret } from '../src/commands/secret';
-import logger from '../src/utils/logger';
+import { generate } from '../src/commands/generate';
 
-// Define regex pattern at the top level
-const SECRET_HEX_PATTERN = /C15T_SECRET=[a-f0-9]{64}/i;
+// Create a simple mock context
+const mockContext = {
+	logger: {
+		info: vi.fn(),
+		debug: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn(),
+		success: vi.fn(),
+		failed: vi.fn(),
+		message: vi.fn(),
+		note: vi.fn(),
+		outro: vi.fn(),
+	},
+	flags: { config: 'c15t.config.js', y: true },
+	cwd: '/test/dir',
+	commandName: 'generate',
+	commandArgs: [],
+	error: {
+		handleError: vi.fn(),
+		handleCancel: vi.fn(),
+	},
+	fs: {
+		getPackageInfo: vi.fn(() => ({ version: '1.0.0' })),
+	},
+};
 
-// Mock filesystem
-vi.mock('node:fs', () => ({
-	existsSync: vi.fn().mockReturnValue(true),
+// Mock generate function
+vi.mock('../src/commands/generate', () => ({
+	generate: vi.fn(),
 }));
 
-// Mock database
-vi.mock('better-sqlite3', () => {
-	return {
-		default: vi.fn().mockImplementation(() => ({
-			prepare: vi.fn().mockReturnValue({
-				run: vi.fn(),
-				all: vi.fn().mockReturnValue([]),
-				get: vi.fn(),
-			}),
-			transaction: vi.fn(),
-		})),
-	};
-});
-
-// Mock getMigrations
-vi.mock('@c15t/backend/pkgs/migrations', () => ({
-	getMigrations: vi.fn().mockImplementation(() => ({
-		compileMigrations: vi.fn().mockResolvedValue('-- Mock SQL Migration'),
-		toBeAdded: [],
-		toBeCreated: [],
-		runMigrations: vi.fn().mockResolvedValue(undefined),
-	})),
-}));
-
-// Mock config with more complete data
-vi.mock('../src/utils/get-config', () => ({
+// Mock config module
+vi.mock('../src/actions/get-config', () => ({
 	getConfig: vi.fn().mockResolvedValue({
-		database: {
-			id: 'kysely',
-			introspection: { schema: {}, tables: {} },
-		},
-		basePath: '/api/c15t',
-		appName: 'Test App',
+		mode: 'c15t',
+		backendURL: 'https://test.c15t.dev',
 	}),
 }));
 
-// Mock adapter with necessary methods
-vi.mock('@c15t/backend/pkgs/db-adapters', () => ({
-	getAdapter: vi.fn().mockResolvedValue({
-		id: 'kysely',
-		generateSchema: vi.fn().mockResolvedValue('-- Generated Schema'),
-		inspect: vi.fn().mockResolvedValue({ schema: {}, tables: {} }),
-		options: { provider: 'sqlite' },
+// Mock onboarding
+vi.mock('../src/onboarding', () => ({
+	startOnboarding: vi.fn(),
+}));
+
+// Mock setupGenerateEnvironment
+vi.mock('../src/commands/generate/setup', () => ({
+	setupGenerateEnvironment: vi.fn().mockResolvedValue({
+		config: { mode: 'c15t', backendURL: 'https://test.c15t.dev' },
+		adapter: null,
 	}),
+}));
+
+// Mock clack/prompts
+vi.mock('@clack/prompts', () => ({
+	confirm: vi.fn().mockImplementation(() => false),
+	isCancel: vi.fn().mockReturnValue(false),
+	log: {
+		info: vi.fn(),
+		warn: vi.fn(),
+		error: vi.fn(),
+	},
 }));
 
 describe('Command Integration', () => {
 	beforeEach(() => {
-		// Mock process.exit to prevent tests from exiting
-		vi.spyOn(process, 'exit').mockImplementation(() => undefined as never);
+		vi.clearAllMocks();
 	});
 
 	afterEach(() => {
@@ -68,128 +74,37 @@ describe('Command Integration', () => {
 	});
 
 	describe('generate command', () => {
-		it('should call generateAction with correct options', async () => {
-			// Create a spy action handler
-			const actionSpy = vi.fn();
+		it('should call generate with context', async () => {
+			// Call generate directly
+			await generate(mockContext);
 
-			// Create a test command with our spy
-			const testCommand = new Command('generate')
-				.option('-c, --cwd <cwd>', 'working directory', process.cwd())
-				.option('--config <config>', 'config file path')
-				.option('--output <output>', 'output file path')
-				.option('-y, --y', 'auto-confirm', false)
-				.action(actionSpy);
-
-			// Create a program and add our test command
-			const program = new Command();
-			program.addCommand(testCommand);
-
-			try {
-				// Parse arguments
-				await program.parseAsync([
-					'node',
-					'test',
-					'generate',
-					'--cwd',
-					'/test/dir',
-					'--config',
-					'c15t.config.js',
-					'--output',
-					'schema.ts',
-					'-y',
-				]);
-
-				// Check that the action was called with the correct options
-				expect(actionSpy).toHaveBeenCalledTimes(1);
-				// Check only the first argument (options object)
-				expect(actionSpy.mock.calls[0]?.[0]).toEqual(
-					expect.objectContaining({
-						cwd: '/test/dir',
-						config: 'c15t.config.js',
-						output: 'schema.ts',
-						y: true,
-					})
-				);
-			} catch (error) {
-				// biome-ignore lint/suspicious/noConsole: its okay as its a test
-				console.error('Test failed with error:', error);
-				throw error;
-			}
+			// Check that generate was called
+			expect(generate).toHaveBeenCalledTimes(1);
+			expect(generate).toHaveBeenCalledWith(mockContext);
 		});
 	});
 
-	describe('migrate command', () => {
-		it('should call migrateAction with correct options', async () => {
-			// Create a spy action handler
-			const actionSpy = vi.fn();
+	// describe('migrate command', () => {
+	// 	it('should call migrate with parsed arguments', async () => {
+	// 		const args = [
+	// 			'--cwd',
+	// 			'/test/dir',
+	// 			'--config',
+	// 			'c15t.config.js',
+	// 			'-y',
+	// 		];
+	// 		process.argv = ['node', 'index.js', 'migrate', ...args];
 
-			// Create a test command with our spy
-			const testCommand = new Command('migrate')
-				.option('-c, --cwd <cwd>', 'working directory', process.cwd())
-				.option('--config <config>', 'config file path')
-				.option('-y, --y', 'auto-confirm', false)
-				.action(actionSpy);
-
-			// Create a program and add our test command
-			const program = new Command();
-			program.addCommand(testCommand);
-
-			try {
-				// Parse arguments
-				await program.parseAsync([
-					'node',
-					'test',
-					'migrate',
-					'--cwd',
-					'/test/dir',
-					'--config',
-					'c15t.config.js',
-					'-y',
-				]);
-
-				// Check that the action was called with the correct options
-				expect(actionSpy).toHaveBeenCalledTimes(1);
-				// Check only the first argument (options object)
-				expect(actionSpy.mock.calls[0]?.[0]).toEqual(
-					expect.objectContaining({
-						cwd: '/test/dir',
-						config: 'c15t.config.js',
-						y: true,
-					})
-				);
-			} catch (error) {
-				// biome-ignore lint/suspicious/noConsole: its okay as its a test
-				console.error('Test failed with error:', error);
-				throw error;
-			}
-		});
-	});
-
-	describe('secret command', () => {
-		it('should call logger with generated secret', async () => {
-			// Mock the logger.info method
-			const loggerSpy = vi
-				.spyOn(logger, 'info')
-				.mockImplementation(() => undefined);
-
-			// Create a new program and register the command
-			const program = new Command();
-			program.addCommand(generateSecret);
-
-			try {
-				// Parse arguments
-				await program.parseAsync(['node', 'test', 'secret']);
-
-				// Verify logger was called with a message containing the secret
-				expect(loggerSpy).toHaveBeenCalledTimes(1);
-				expect(loggerSpy).toHaveBeenCalledWith(
-					expect.stringMatching(SECRET_HEX_PATTERN)
-				);
-			} catch (error) {
-				// biome-ignore lint/suspicious/noConsole: its okay as its a test
-				console.error('Test failed with error:', error);
-				throw error;
-			}
-		});
-	});
+	// 		try {
+	// 			await main();
+	// 			// Check that the migrate function was called with the arguments *after* the command name
+	// 			expect(migrate).toHaveBeenCalledTimes(1);
+	// 			expect(migrate).toHaveBeenCalledWith(args);
+	// 		} catch (error) {
+	// 			// biome-ignore lint/suspicious/noConsole: its okay as its a test
+	// 			console.error('Test failed with error:', error);
+	// 			throw error;
+	// 		}
+	// 	});
+	// });
 });

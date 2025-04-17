@@ -1,143 +1,139 @@
-import { existsSync } from 'node:fs';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { getAdapter } from '@c15t/backend/pkgs/db-adapters';
-import chalk from 'chalk';
-import { Command } from 'commander';
-import prompts from 'prompts';
-import yoctoSpinner from 'yocto-spinner';
-import { z } from 'zod';
-import { getGenerator } from '../generators';
-import { getConfig } from '../utils/get-config';
-import logger from '../utils/logger';
+import * as p from '@clack/prompts';
+import color from 'picocolors';
+import type { CliContext } from '~/context/types';
+import { startOnboarding } from '~/onboarding';
+import { formatLogMessage } from '~/utils/logger';
+import { TelemetryEventName } from '~/utils/telemetry';
+import {
+	isC15TOptions,
+	isClientOptions,
+} from '../actions/get-config/config-extraction';
+import { setupGenerateEnvironment } from './generate/setup';
 
-export async function generateAction(opts: unknown) {
-	const options = z
-		.object({
-			cwd: z.string(),
-			config: z.string().optional(),
-			output: z.string().optional(),
-			y: z.boolean().optional(),
-		})
-		.parse(opts);
+/**
+ * Generate command - loads config, allows updating via onboarding, then generates artifacts.
+ */
+export async function generate(context: CliContext) {
+	const { logger, error, telemetry } = context;
+	logger.debug('Starting generate command...');
 
-	const cwd = path.resolve(options.cwd);
-	if (!existsSync(cwd)) {
-		logger.error(`The directory "${cwd}" does not exist.`);
-		process.exit(1);
-	}
-	const config = await getConfig({
-		cwd,
-		configPath: options.config,
-	});
-	if (!config) {
-		logger.error(
-			'No configuration file found. Add a `c15t.ts` file to your project or pass the path to the configuration file using the `--config` flag.'
-		);
-		return;
-	}
+	// Track generate command start
+	telemetry.trackEvent(TelemetryEventName.GENERATE_STARTED, {});
 
-	const adapter = await getAdapter(config).catch((e: Error) => {
-		logger.error(e.message);
-		process.exit(1);
-	});
+	// Load config & adapter
+	const setupResult = await setupGenerateEnvironment(context);
+	let { config, adapter } = setupResult;
 
-	const spinner = yoctoSpinner({ text: 'preparing schema...' }).start();
-
-	const schema = await getGenerator({
-		adapter,
-		file: options.output,
-		options: config,
-	});
-
-	spinner.stop();
-	if (!schema.code) {
-		logger.info('Your schema is already up to date.');
-		process.exit(0);
-	}
-	if (schema.append || schema.overwrite) {
-		let confirm = options.y;
-		if (!confirm) {
-			const response = await prompts({
-				type: 'confirm',
-				name: 'confirm',
-				message: `The file ${
-					schema.fileName
-				} already exists. Do you want to ${chalk.yellow(
-					`${schema.overwrite ? 'overwrite' : 'append'}`
-				)} the schema to the file?`,
-			});
-			confirm = response.confirm;
+	// Config update/onboarding flow
+	if (config) {
+		// Config exists - ask user if they want to update it
+		let currentMode = 'unknown';
+		if (isClientOptions(config)) {
+			if (config.mode) {
+				currentMode = config.mode;
+			}
+		} else if (isC15TOptions(config)) {
+			currentMode = 'backend'; // Indicate it's a backend config
 		}
 
-		if (confirm) {
-			const exist = existsSync(path.join(cwd, schema.fileName));
-			if (!exist) {
-				await fs.mkdir(path.dirname(path.join(cwd, schema.fileName)), {
-					recursive: true,
-				});
-			}
-			if (schema.overwrite) {
-				await fs.writeFile(path.join(cwd, schema.fileName), schema.code);
-			} else {
-				await fs.appendFile(path.join(cwd, schema.fileName), schema.code);
-			}
-			logger.success(
-				`🚀 Schema was ${
-					schema.overwrite ? 'overwritten' : 'appended'
-				} successfully!`
-			);
-			process.exit(0);
-		} else {
-			logger.error('Schema generation aborted.');
-			process.exit(1);
-		}
-	}
-
-	let confirm = options.y;
-
-	if (!confirm) {
-		const response = await prompts({
-			type: 'confirm',
-			name: 'confirm',
-			message: `Do you want to generate the schema to ${chalk.yellow(
-				schema.fileName
-			)}?`,
+		// Track found existing configuration
+		telemetry.trackEvent(TelemetryEventName.CONFIG_LOADED, {
+			type: currentMode,
+			exists: true,
 		});
-		confirm = response.confirm;
-	}
 
-	if (!confirm) {
-		logger.error('Schema generation aborted.');
-		process.exit(1);
-	}
+		const shouldUpdate = await p.confirm({
+			message: formatLogMessage(
+				'warn',
+				`A c15t configuration already exists. Would you like to update it before generating? (${color.dim(`Current mode: ${currentMode}`)})`
+			),
+			initialValue: false, // Default to NOT updating
+		});
 
-	if (!options.output) {
-		const dirExist = existsSync(path.dirname(path.join(cwd, schema.fileName)));
-		if (!dirExist) {
-			await fs.mkdir(path.dirname(path.join(cwd, schema.fileName)), {
-				recursive: true,
+		if (!shouldUpdate) {
+			telemetry.trackEvent(TelemetryEventName.GENERATE_COMPLETED, {
+				success: false,
+				reason: 'user_cancelled',
+			});
+			return error.handleCancel('Operation cancelled.');
+		}
+
+		if (shouldUpdate) {
+			await startOnboarding(context, config);
+
+			// Reload config with less verbose logging
+			logger.debug('Reloading configuration after update...');
+			const postUpdateResult = await setupGenerateEnvironment(context);
+			if (!postUpdateResult.config) {
+				telemetry.trackEvent(TelemetryEventName.GENERATE_FAILED, {
+					error: 'Failed to load configuration after update',
+				});
+				return error.handleError(
+					new Error('Failed to load configuration after update.'),
+					'Configuration Error'
+				);
+			}
+			config = postUpdateResult.config;
+			adapter = postUpdateResult.adapter;
+			logger.info('Configuration updated successfully.');
+
+			// Track successful config update
+			telemetry.trackEvent(TelemetryEventName.GENERATE_COMPLETED, {
+				success: true,
+				configUpdated: true,
+			});
+		} else {
+			logger.debug('Proceeding with existing configuration.');
+
+			// Track completion with existing config
+			telemetry.trackEvent(TelemetryEventName.GENERATE_COMPLETED, {
+				success: true,
+				configUpdated: false,
 			});
 		}
-	}
-	await fs.writeFile(
-		options.output || path.join(cwd, schema.fileName),
-		schema.code
-	);
-	logger.success('🚀 Schema was generated successfully!');
-	process.exit(0);
-}
+	} else {
+		logger.info('No configuration found.');
 
-export const generate = new Command('generate')
-	.option(
-		'-c, --cwd <cwd>',
-		'the working directory. defaults to the current directory.',
-		process.cwd()
-	)
-	.option(
-		'--config <config>',
-		'the path to the configuration file. defaults to the first configuration file found.'
-	)
-	.option('--output <output>', 'the file to output to the generated schema')
-	.option('-y, --y', 'automatically answer yes to all prompts', false)
-	.action(generateAction);
+		// Track missing configuration
+		telemetry.trackEvent(TelemetryEventName.CONFIG_LOADED, {
+			exists: false,
+		});
+
+		const shouldOnboard = await p.confirm({
+			message: 'No c15t configuration found. Would you like to create one now?',
+			initialValue: true,
+		});
+		if (p.isCancel(shouldOnboard) || !shouldOnboard) {
+			telemetry.trackEvent(TelemetryEventName.GENERATE_COMPLETED, {
+				success: false,
+				reason: 'onboarding_declined',
+			});
+			return error.handleCancel('Configuration setup cancelled.');
+		}
+
+		// Run onboarding
+		await startOnboarding(context);
+
+		// Reload config with less verbose logging
+		logger.debug('Reloading configuration after onboarding...');
+		const postOnboardResult = await setupGenerateEnvironment(context);
+		if (!postOnboardResult.config) {
+			telemetry.trackEvent(TelemetryEventName.GENERATE_FAILED, {
+				error: 'Failed to load configuration even after onboarding',
+			});
+			return error.handleError(
+				new Error('Failed to load configuration even after onboarding.'),
+				'Configuration Error'
+			);
+		}
+		config = postOnboardResult.config;
+		adapter = postOnboardResult.adapter;
+		logger.info('New configuration loaded successfully.');
+
+		// Track successful creation of new config
+		telemetry.trackEvent(TelemetryEventName.GENERATE_COMPLETED, {
+			success: true,
+			newConfigCreated: true,
+		});
+	}
+}

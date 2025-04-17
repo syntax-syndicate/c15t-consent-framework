@@ -1,125 +1,63 @@
-import { existsSync } from 'node:fs';
-import path from 'node:path';
-import { getAdapter } from '@c15t/backend/pkgs/db-adapters';
-import { getMigrations } from '@c15t/backend/pkgs/migrations';
-import chalk from 'chalk';
-import { Command } from 'commander';
-import prompts from 'prompts';
-import yoctoSpinner from 'yocto-spinner';
-import { z } from 'zod';
-import { getConfig } from '../utils/get-config';
-import logger from '../utils/logger';
-export async function migrateAction(opts: unknown) {
-	const options = z
-		.object({
-			cwd: z.string(),
-			config: z.string().optional(),
-			y: z.boolean().optional(),
-		})
-		.parse(opts);
-	const cwd = path.resolve(options.cwd);
-	if (!existsSync(cwd)) {
-		logger.error(`The directory "${cwd}" does not exist.`);
-		process.exit(1);
-	}
-	const config = await getConfig({
-		cwd,
-		configPath: options.config,
+import type { CliContext } from '~/context/types';
+import { TelemetryEventName } from '~/utils/telemetry';
+import { executeMigrations } from './migrate/execute';
+import { planMigrations } from './migrate/plan';
+import { setupEnvironment } from './migrate/setup';
+
+export async function migrate(context: CliContext) {
+	const { logger, flags, telemetry } = context;
+	logger.info('Starting migration process...');
+	logger.debug('Context:', context);
+
+	// Track migration start
+	telemetry.trackEvent(TelemetryEventName.MIGRATION_STARTED, {
+		skipConfirmation: flags.y === true,
 	});
-	if (!config) {
-		logger.error(
-			'No configuration file found. Add a `c15t.ts` file to your project or pass the path to the configuration file using the `--config` flag.'
-		);
-		return;
-	}
 
-	const db = await getAdapter(config);
+	const skipConfirmation = flags.y as boolean;
 
-	if (!db) {
-		logger.error(
-			"Invalid database configuration. Make sure you're not using adapters. Migrate command only works with built-in Kysely adapter."
-		);
-		process.exit(1);
-	}
+	try {
+		// 1. Setup environment
+		const { config } = await setupEnvironment(context);
 
-	if (db.id !== 'kysely') {
-		if (db.id === 'prisma') {
-			logger.error(
-				'The migrate command only works with the built-in Kysely adapter. For Prisma, run `npx @c15t/cli generate` to create the schema, then use Prisma’s migrate or push to apply it.'
-			);
-			process.exit(0);
-		}
-		if (db.id === 'drizzle') {
-			logger.error(
-				'The migrate command only works with the built-in Kysely adapter. For Drizzle, run `npx @c15t/cli generate` to create the schema, then use Drizzle’s migrate or push to apply it.'
-			);
-			process.exit(0);
-		}
-		logger.error("Migrate command isn't supported for this adapter.");
-		process.exit(1);
-	}
+		// 2. Plan migrations
+		const planResult = await planMigrations(context, config, skipConfirmation);
+		logger.debug('Plan result:', planResult);
 
-	const spinner = yoctoSpinner({ text: 'preparing migration...' }).start();
-
-	const { toBeAdded, toBeCreated, runMigrations } = await getMigrations(config);
-
-	if (!toBeAdded.length && !toBeCreated.length) {
-		spinner.stop();
-		logger.info('🚀 No migrations needed.');
-		process.exit(0);
-	}
-
-	spinner.stop();
-	logger.info('🔑 The migration will affect the following:');
-
-	for (const table of [...toBeCreated, ...toBeAdded]) {
-		// biome-ignore lint/suspicious/noConsoleLog: its a cli tool
-		// biome-ignore lint/suspicious/noConsole: its a cli tool
-		console.log(
-			'->',
-			chalk.magenta(Object.keys(table.fields).join(', ')),
-			chalk.white('fields on'),
-			chalk.yellow(`${table.table}`),
-			chalk.white('table.')
-		);
-	}
-
-	let migrate = options.y;
-	if (!migrate) {
-		const response = await prompts({
-			type: 'confirm',
-			name: 'migrate',
-			message: 'Are you sure you want to run these migrations?',
-			initial: false,
+		// Track migration plan
+		telemetry.trackEvent(TelemetryEventName.MIGRATION_PLANNED, {
+			shouldRun: planResult.shouldRun,
+			hasMigrations: !!planResult.runMigrationsFn,
 		});
-		migrate = response.migrate;
-	}
 
-	if (!migrate) {
-		logger.info('Migration cancelled.');
-		process.exit(0);
-	}
+		// 3. Execute migrations if necessary
+		if (planResult.shouldRun && planResult.runMigrationsFn) {
+			await executeMigrations(context, planResult.runMigrationsFn);
 
-	spinner?.start('migrating...');
-	await runMigrations();
-	spinner.stop();
-	logger.info('🚀 migration was completed successfully!');
-	process.exit(0);
+			// Track migration completion
+			telemetry.trackEvent(TelemetryEventName.MIGRATION_COMPLETED, {
+				success: true,
+			});
+		} else {
+			logger.debug('Skipping migration execution based on plan result');
+
+			// Track that no migration was needed or user cancelled
+			telemetry.trackEvent(TelemetryEventName.MIGRATION_COMPLETED, {
+				success: true,
+				reason: planResult.shouldRun
+					? 'no_migrations_needed'
+					: 'user_cancelled',
+			});
+		}
+	} catch (error) {
+		// Track migration failure
+		telemetry.trackEvent(TelemetryEventName.MIGRATION_FAILED, {
+			error: error instanceof Error ? error.message : String(error),
+		});
+
+		context.error.handleError(
+			error,
+			'An unexpected error occurred during the migration process'
+		);
+	}
 }
-
-export const migrate = new Command('migrate')
-	.option(
-		'-c, --cwd <cwd>',
-		'the working directory. defaults to the current directory.',
-		process.cwd()
-	)
-	.option(
-		'--config <config>',
-		'the path to the configuration file. defaults to the first configuration file found.'
-	)
-	.option(
-		'-y, --y',
-		'automatically accept and run migrations without prompting',
-		false
-	)
-	.action(migrateAction);
