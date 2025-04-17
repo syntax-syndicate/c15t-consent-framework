@@ -90,7 +90,7 @@ export class Telemetry {
 	private disabled: boolean;
 	private defaultProperties: Record<string, string | number | boolean>;
 	private distinctId: string;
-	private apiKey = '';
+	private apiKey = 'phc_ViY5LtTmh4kqoumXZB2olPFoTz4AbbDfrogNgFi1MH3';
 
 	/**
 	 * Creates a new telemetry instance
