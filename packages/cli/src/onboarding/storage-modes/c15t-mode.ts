@@ -66,7 +66,7 @@ export async function setupC15tMode(
 
 		if (shouldOpen) {
 			try {
-				await open('https://app.consent.io/register?ref=cli');
+				await open('https://consent.io/dashboard/register?ref=cli');
 				const enterPressed = await p.text({
 					message:
 						'Press Enter once you have created your instance and have the backendURL',
@@ -77,7 +77,7 @@ export async function setupC15tMode(
 				}
 			} catch (error) {
 				logger.warn(
-					'Failed to open browser automatically. Please visit https://app.consent.io/register manually.'
+					'Failed to open browser automatically. Please visit https://consent.io/dashboard/register manually.'
 				);
 			}
 		}
