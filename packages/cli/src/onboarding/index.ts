@@ -265,9 +265,7 @@ export async function startOnboarding(
 		// --- 3. Handle Dependencies ---
 		let addDeps = false; // Initialize with default value
 		if (dependenciesToAdd.length > 0) {
-			const depsString = dependenciesToAdd
-				.map((d) => color.cyan(d))
-				.join(', ');
+			const depsString = dependenciesToAdd.map((d) => color.cyan(d)).join(', ');
 
 			const addDepsSelection = await p.confirm({
 				message: `${isUpdate ? 'Update' : 'Add'} required dependencies using ${color.cyan(packageManager)}? (${depsString})`,
