@@ -1,5 +1,7 @@
-import { defineRoute } from '~/pkgs/api-router/utils/define-route';
+
+import { z } from 'zod';
 import { version } from '../../package.json';
+import { pub } from './index';
 
 /**
  * Response type for the status endpoint
@@ -42,20 +44,32 @@ export interface StatusResponse {
  * }
  * ```
  */
-export const status = defineRoute<StatusResponse>({
-	path: '/status',
-	method: 'get',
-	handler: async (event) => {
+export const statusHandler = pub
+	.route({
+		path: '/status',
+		method: 'GET',
+	})
+	.output(
+		z.object({
+			status: z.enum(['ok', 'error']),
+			version: z.string(),
+			timestamp: z.string(),
+			storage: z.object({
+				type: z.string(),
+				available: z.boolean(),
+			}),
+		})
+	)
+	.handler(async ({ context }) => {
 		const response: StatusResponse = {
 			status: 'ok',
 			version: version,
 			timestamp: new Date().toISOString(),
 			storage: {
-				type: event.context.adapter?.id ?? 'Unavailable',
-				available: !!event.context.adapter,
+				type: context.adapter?.id ?? 'Unavailable',
+				available: !!context.adapter,
 			},
 		};
 
 		return response;
-	},
-});
+	});

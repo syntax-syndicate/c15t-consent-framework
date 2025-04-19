@@ -1,4 +1,6 @@
-import { defineRoute } from '~/pkgs/api-router/utils/define-route';
+
+import { z } from 'zod';
+import { pub } from './index';
 
 export interface ShowConsentBannerResponse {
 	showConsentBanner: boolean;
@@ -12,22 +14,37 @@ export interface ShowConsentBannerResponse {
 	};
 }
 
-export const showConsentBanner = defineRoute<ShowConsentBannerResponse>({
-	path: '/show-consent-banner',
-	method: 'get',
-	handler: async (event) => {
-		const countryCode =
-			event.headers.get('cf-ipcountry') ||
-			event.headers.get('x-vercel-ip-country') ||
-			event.headers.get('x-amz-cf-ipcountry') ||
-			event.headers.get('x-country-code');
+export const showConsentBannerHandler = pub
+	.route({
+		path: '/show-consent-banner',
+		method: 'GET',
+	})
+	.output(
+		z.object({
+			showConsentBanner: z.boolean(),
+			jurisdiction: z.object({
+				code: z.string(),
+				message: z.string(),
+			}),
+			location: z.object({
+				countryCode: z.string().nullable(),
+				regionCode: z.string().nullable(),
+			}),
+		})
+	)
+	.handler(async ({ context }) => {
+		// In oRPC we'd get headers from context instead of req
+		// This would require context adjustment in the server setup
+		const countryCode = context.headers?.['cf-ipcountry'] || 
+			context.headers?.['x-vercel-ip-country'] || 
+			context.headers?.['x-amz-cf-ipcountry'] || 
+			context.headers?.['x-country-code'] || null;
 
-		const regionCode =
-			event.headers.get('x-vercel-ip-country-region') ||
-			event.headers.get('x-region-code');
+		const regionCode = context.headers?.['x-vercel-ip-country-region'] || 
+			context.headers?.['x-region-code'] || null;
 
 		const { showConsentBanner, jurisdictionCode, message } = checkJurisdiction(
-			countryCode ?? null
+			typeof countryCode === 'string' ? countryCode : null
 		);
 
 		return {
@@ -36,10 +53,12 @@ export const showConsentBanner = defineRoute<ShowConsentBannerResponse>({
 				code: jurisdictionCode,
 				message,
 			},
-			location: { countryCode, regionCode },
+			location: { 
+				countryCode: typeof countryCode === 'string' ? countryCode : null, 
+				regionCode: typeof regionCode === 'string' ? regionCode : null
+			},
 		};
-	},
-});
+	});
 
 function checkJurisdiction(countryCode: string | null) {
 	const jurisdictions = {

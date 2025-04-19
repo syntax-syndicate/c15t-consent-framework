@@ -353,6 +353,9 @@ importers:
       '@opentelemetry/sdk-trace-base':
         specifier: ^1.25.1
         version: 1.30.1(@opentelemetry/api@1.8.0)
+      '@orpc/server':
+        specifier: ^1.0.3
+        version: 1.0.3
       base-x:
         specifier: ^5.0.1
         version: 5.0.1
@@ -2377,6 +2380,27 @@ packages:
   '@orama/orama@3.1.4':
     resolution: {integrity: sha512-7tTuIdkzgRscJ7sGHVsoK9GtXSpwbfrj3WYnuSu/SepXHhshYiQaOeXc/aeLh4MfgIre6tEs/caIop8wrhMi3g==}
     engines: {node: '>= 16.0.0'}
+
+  '@orpc/client@1.0.3':
+    resolution: {integrity: sha512-BVmSNvnPrhgv/1Fa3SMLKSSJD/CXQcUKQlyq8AAPEQfVvSePiT/W3+koVdlQLEx+zM1WkHRl8W8AWK4Iwm7OaQ==}
+
+  '@orpc/contract@1.0.3':
+    resolution: {integrity: sha512-3H1moWsFUwhwg6DLYR79srcSEdLU4JBNrxbYuIvC5FMZSuHB4dmHOsWYWUhFVA2Xl9p8IfgmUH3RaOqSE0Ff4g==}
+
+  '@orpc/server@1.0.3':
+    resolution: {integrity: sha512-W8eNvLyo00RqkyE2DJC0do+5uqVfSoDoCQ6qPuNTWVB0Aiwdrxwd8XOQFO/SbUKQdZ68Gi+EWEGNhYBfBh3BeQ==}
+
+  '@orpc/shared@1.0.3':
+    resolution: {integrity: sha512-/g8YchmSja4qE8UEdraueGcmCXlMvYM9OTDVV/RXzlQER/iQOnSTR5n7teol5XzIOI/bGWhsy5LUu979ACNABg==}
+
+  '@orpc/standard-server-fetch@1.0.3':
+    resolution: {integrity: sha512-ApXKtFPjoS5FtbsiF2HAIke5tJfN1biq/fz7ioCD1Iguw4csar+J99BxBSOQFhYERv44ZcK14Qf5EcWlLb3owg==}
+
+  '@orpc/standard-server-node@1.0.3':
+    resolution: {integrity: sha512-HFCdI8qZfT8NoKke7O5smm7SVspw22zuXI/M5DFtKONcixcQl+aqIVjFJZqUCFPYyai8eqZvQNRxeGMpgAdm+A==}
+
+  '@orpc/standard-server@1.0.3':
+    resolution: {integrity: sha512-UYHSXULFjNXToSeJNrF1OrreN911Uq5q8YceH9ldc7i3QKszbFVVN1410cMMLSZLoP/mk37IlZ/fs/q1F9G6rg==}
 
   '@oslojs/encoding@1.1.0':
     resolution: {integrity: sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ==}
@@ -6197,6 +6221,7 @@ packages:
 
   libsql@0.3.19:
     resolution: {integrity: sha512-Aj5cQ5uk/6fHdmeW0TiXK42FqUlwx7ytmMLPSaUQPin5HKKKuUPD62MAbN4OEweGBBI7q1BekoEN4gPUEL6MZA==}
+    cpu: [x64, arm64, wasm32]
     os: [darwin, linux, win32]
 
   libsql@0.5.5:
@@ -10708,6 +10733,46 @@ snapshots:
 
   '@orama/orama@3.1.4': {}
 
+  '@orpc/client@1.0.3':
+    dependencies:
+      '@orpc/shared': 1.0.3
+      '@orpc/standard-server': 1.0.3
+      '@orpc/standard-server-fetch': 1.0.3
+
+  '@orpc/contract@1.0.3':
+    dependencies:
+      '@orpc/client': 1.0.3
+      '@orpc/shared': 1.0.3
+      '@standard-schema/spec': 1.0.0
+
+  '@orpc/server@1.0.3':
+    dependencies:
+      '@orpc/client': 1.0.3
+      '@orpc/contract': 1.0.3
+      '@orpc/shared': 1.0.3
+      '@orpc/standard-server': 1.0.3
+      '@orpc/standard-server-fetch': 1.0.3
+      '@orpc/standard-server-node': 1.0.3
+
+  '@orpc/shared@1.0.3':
+    dependencies:
+      radash: 12.1.0
+      type-fest: 4.39.1
+
+  '@orpc/standard-server-fetch@1.0.3':
+    dependencies:
+      '@orpc/shared': 1.0.3
+      '@orpc/standard-server': 1.0.3
+
+  '@orpc/standard-server-node@1.0.3':
+    dependencies:
+      '@orpc/shared': 1.0.3
+      '@orpc/standard-server': 1.0.3
+
+  '@orpc/standard-server@1.0.3':
+    dependencies:
+      '@orpc/shared': 1.0.3
+
   '@oslojs/encoding@1.1.0': {}
 
   '@oxc-transform/binding-darwin-arm64@0.53.0':
@@ -12568,7 +12633,7 @@ snapshots:
       sirv: 3.0.1
       tinyglobby: 0.2.12
       tinyrainbow: 2.0.0
-      vitest: 3.1.1(@types/debug@4.1.12)(@types/node@22.14.1)(@vitest/browser@3.1.1)(@vitest/ui@3.1.1)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.29.3)(msw@2.7.3(@types/node@22.14.1)(typescript@5.8.3))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.1)
+      vitest: 3.1.1(@types/debug@4.1.12)(@types/node@20.14.13)(@vitest/browser@3.1.1)(@vitest/ui@3.1.1)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0)(lightningcss@1.29.3)(msw@2.7.3(@types/node@20.14.13)(typescript@5.8.3))(terser@5.39.0)(tsx@4.19.3)(yaml@2.7.1)
 
   '@vitest/utils@3.1.1':
     dependencies:

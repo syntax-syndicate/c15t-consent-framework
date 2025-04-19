@@ -1,6 +1,6 @@
-import type { EventHandlerRequest, H3Event } from 'h3';
+import { } from '@orpc/server';
 import { z } from 'zod';
-import { defineRoute } from '~/pkgs/api-router/utils/define-route';
+import { pub } from './index';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
 import { validateEntityOutput } from '~/schema/definition';
 
@@ -16,7 +16,7 @@ export interface VerifyConsentResponse {
 	consent?: Consent;
 }
 
-export const VerifyConsentRequestBody = z.object({
+export const VerifyConsentSchema = z.object({
 	subjectId: z.string().optional(),
 	externalSubjectId: z.string().optional(),
 	domain: z.string(),
@@ -25,14 +25,26 @@ export const VerifyConsentRequestBody = z.object({
 	preferences: z.array(z.string()).optional(),
 });
 
-export const verifyConsent = defineRoute({
-	path: '/consent/verify',
-	method: 'post',
-	validations: {
-		body: VerifyConsentRequestBody,
-	},
-	handler: async (event) => {
-		const { body } = event.context.validated;
+export const verifyConsentHandler = pub
+	.route({
+		path: '/consent/verify',
+		method: 'POST',
+	})
+	.input(VerifyConsentSchema)
+	.output(
+		z.object({
+			isValid: z.boolean(),
+			reasons: z.array(z.string()).optional(),
+			consent: z
+				.object({
+					id: z.string(),
+					purposeIds: z.array(z.string()),
+				})
+				.passthrough()
+				.optional(),
+		})
+	)
+	.handler(async ({ input, context }) => {
 		const {
 			type,
 			subjectId,
@@ -40,15 +52,15 @@ export const verifyConsent = defineRoute({
 			domain,
 			policyId,
 			preferences,
-		} = body;
+		} = input;
 
-		const { registry } = event.context;
+		const { registry } = context;
 
 		// Find subject
 		const subject = await registry.findOrCreateSubject({
 			subjectId,
 			externalSubjectId,
-			ipAddress: event.context.ipAddress || 'unknown',
+			ipAddress: context.ipAddress || 'unknown',
 		});
 
 		if (!subject) {
@@ -108,7 +120,7 @@ export const verifyConsent = defineRoute({
 				domainId: domainRecord.id,
 				purposeIds,
 				type,
-				event,
+				context,
 			});
 		}
 
@@ -127,10 +139,9 @@ export const verifyConsent = defineRoute({
 			domainId: domainRecord.id,
 			purposeIds,
 			type,
-			event,
+			context,
 		});
-	},
-});
+	});
 
 interface ConsentCheckParams {
 	policyId: string;
@@ -138,7 +149,7 @@ interface ConsentCheckParams {
 	domainId: string;
 	purposeIds?: string[];
 	type: string;
-	event: H3Event<EventHandlerRequest>;
+	context: any; // This will be replaced with our Context type
 }
 
 async function policyConsentGiven({
@@ -147,9 +158,9 @@ async function policyConsentGiven({
 	domainId,
 	purposeIds,
 	type,
-	event,
+	context,
 }: ConsentCheckParams): Promise<VerifyConsentResponse> {
-	const { registry, adapter } = event.context;
+	const { registry, adapter } = context;
 
 	const rawConsents = await adapter.findMany({
 		model: 'consent',

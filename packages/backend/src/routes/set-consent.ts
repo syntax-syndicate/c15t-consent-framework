@@ -1,12 +1,9 @@
+import { ORPCError, } from '@orpc/server';
 import { z } from 'zod';
-
-import { defineRoute } from '~/pkgs/api-router/utils/define-route';
-import type { Adapter } from '~/pkgs/db-adapters/types';
+import { pub } from './index';
+import { } from '~/pkgs/results';
 import { createLogger } from '~/pkgs/logger';
-import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
-import type { Consent } from '~/schema/consent';
 import { PolicyTypeSchema } from '~/schema/consent-policy';
-import type { ConsentRecord } from '~/schema/consent-record';
 
 const baseConsentSchema = z.object({
 	subjectId: z.string().optional(),
@@ -35,26 +32,38 @@ const otherConsentSchema = baseConsentSchema.extend({
 	preferences: z.record(z.boolean()).optional(),
 });
 
-export const SetConsentRequestBody = z.discriminatedUnion('type', [
+export const SetConsentSchema = z.discriminatedUnion('type', [
 	cookieBannerSchema,
 	policyBasedSchema,
 	otherConsentSchema,
 ]);
 
-export const setConsent = defineRoute({
-	path: '/consent/set',
-	method: 'post',
-	validations: {
-		body: SetConsentRequestBody,
-	},
-	handler: async (event) => {
+export const setConsentHandler = pub
+	.route({
+		path: '/consent/set',
+		method: 'POST',
+	})
+	.input(SetConsentSchema)
+	.output(
+		z.object({
+			id: z.string(),
+			subjectId: z.string(),
+			externalSubjectId: z.string().optional(),
+			domainId: z.string(),
+			domain: z.string(),
+			type: PolicyTypeSchema,
+			status: z.string(),
+			recordId: z.string(),
+			metadata: z.record(z.unknown()).optional(),
+			givenAt: z.string(),
+		})
+	)
+	.handler(async ({ input, context }) => {
 		// Ensure we have a logger (should already be in context, but add as a fallback)
-		const logger = event.context.logger || createLogger();
+		const logger = context.logger || createLogger();
 		logger.info('Handling set-consent request');
 
-		const { body } = event.context.validated;
-		const { registry, adapter } = event.context;
-		const { type, subjectId, externalSubjectId, domain, metadata } = body;
+		const { type, subjectId, externalSubjectId, domain, metadata } = input;
 
 		logger.debug('Request parameters', {
 			type,
@@ -64,79 +73,59 @@ export const setConsent = defineRoute({
 		});
 
 		try {
-			const subject = await registry.findOrCreateSubject({
+			const subject = await context.registry.findOrCreateSubject({
 				subjectId,
 				externalSubjectId,
-				ipAddress: event.context.ipAddress || 'unknown',
+				ipAddress: context.ipAddress || 'unknown',
 			});
 
 			if (!subject) {
 				const errMsg = 'Subject not found or could not be created';
 				logger.error(errMsg, { subjectId, externalSubjectId });
-				throw new DoubleTieError(errMsg, {
-					code: ERROR_CODES.BAD_REQUEST,
-					status: 400,
-					meta: { subjectId, externalSubjectId },
-				});
+				throw new ORPCError('BAD_REQUEST', errMsg);
 			}
 
 			logger.debug('Subject found/created', { subjectId: subject.id });
-			const domainRecord = await registry.findOrCreateDomain(domain);
+			const domainRecord = await context.registry.findOrCreateDomain(domain);
 
 			const now = new Date();
 			let policyId: string | undefined;
 			let purposeIds: string[] = [];
 
-			if ('policyId' in body) {
-				const { policyId: pid } = body;
+			if ('policyId' in input) {
+				const { policyId: pid } = input;
 				policyId = pid;
 
 				if (!policyId) {
-					throw new DoubleTieError('Policy ID is required', {
-						code: ERROR_CODES.BAD_REQUEST,
-						status: 400,
-						meta: { type },
-					});
+					throw new ORPCError('BAD_REQUEST', 'Policy ID is required');
 				}
 
 				// Verify the policy exists and is active
-				const policy = await registry.findConsentPolicyById(policyId);
+				const policy = await context.registry.findConsentPolicyById(policyId);
 				if (!policy) {
-					throw new DoubleTieError('Policy not found', {
-						code: ERROR_CODES.NOT_FOUND,
-						status: 404,
-						meta: { policyId },
-					});
+					throw new ORPCError('NOT_FOUND', 'Policy not found');
 				}
 				if (!policy.isActive) {
-					throw new DoubleTieError('Policy is not active', {
-						code: ERROR_CODES.CONFLICT,
-						status: 409,
-						meta: { policyId },
-					});
+					throw new ORPCError('CONFLICT', 'Policy is not active');
 				}
 			} else {
-				const policy = await registry.findOrCreatePolicy(type);
+				const policy = await context.registry.findOrCreatePolicy(type);
 				if (!policy) {
-					throw new DoubleTieError('Failed to create or find policy', {
-						code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-						status: 500,
-						meta: { type },
-					});
+					throw new ORPCError('INTERNAL_SERVER_ERROR', 'Failed to create or find policy');
 				}
 				policyId = policy.id;
 			}
 
 			// Handle purposes if they exist
-			if ('preferences' in body && body.preferences) {
+			if ('preferences' in input && input.preferences) {
 				purposeIds = await Promise.all(
-					Object.entries(body.preferences)
+					Object.entries(input.preferences)
 						.filter(([_, isConsented]) => isConsented)
 						.map(async ([purposeCode]) => {
 							let existingPurpose =
-								await registry.findConsentPurposeByCode(purposeCode);
+								await context.registry.findConsentPurposeByCode(purposeCode);
 							if (!existingPurpose) {
-								existingPurpose = await registry.createConsentPurpose({
+								existingPurpose = await context.registry.createConsentPurpose({
 									code: purposeCode,
 									name: purposeCode,
 									description: `Auto-created consentPurpose for ${purposeCode}`,
@@ -153,8 +142,8 @@ export const setConsent = defineRoute({
 				);
 			}
 
-			const result = await adapter.transaction({
-				callback: async (tx: Adapter) => {
+			const result = await context.adapter.transaction({
+				callback: async (tx) => {
 					// Create consent record
 					const consentRecord = (await tx.create({
 						model: 'consent',
@@ -166,11 +155,11 @@ export const setConsent = defineRoute({
 							status: 'active',
 							isActive: true,
 							givenAt: now,
-							ipAddress: event.context.ipAddress || 'unknown',
-							agent: event.context.userAgent || 'unknown',
+							ipAddress: context.ipAddress || 'unknown',
+							agent: context.userAgent || 'unknown',
 							history: [],
 						},
-					})) as unknown as Consent;
+					}));
 
 					// Create record entry
 					const record = (await tx.create({
@@ -182,7 +171,7 @@ export const setConsent = defineRoute({
 							details: metadata,
 							createdAt: now,
 						},
-					})) as unknown as ConsentRecord;
+					}));
 
 					// Create audit log entry
 					await tx.create({
@@ -197,8 +186,8 @@ export const setConsent = defineRoute({
 								type,
 							},
 							timestamp: now,
-							ipAddress: event.context.ipAddress || 'unknown',
-							agent: event.context.userAgent || 'unknown',
+							ipAddress: context.ipAddress || 'unknown',
+							agent: context.userAgent || 'unknown',
 						},
 					});
 
@@ -210,11 +199,7 @@ export const setConsent = defineRoute({
 			});
 
 			if (!result || !result.consent || !result.record) {
-				throw new DoubleTieError('Failed to create consent record', {
-					code: ERROR_CODES.INTERNAL_SERVER_ERROR,
-					status: 500,
-					meta: { subjectId: subject.id, domain },
-				});
+				throw new ORPCError('INTERNAL_SERVER_ERROR', 'Failed to create consent record');
 			}
 
 			const response = {
@@ -245,5 +230,4 @@ export const setConsent = defineRoute({
 			// Re-throw to let error middleware handle it
 			throw error;
 		}
-	},
-});
+	});
