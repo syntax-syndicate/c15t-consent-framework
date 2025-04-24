@@ -166,6 +166,26 @@ test('No style prop removes default styles but keeps custom classNames', async (
 	});
 });
 
+test('No style being passed in to each component style removes default styles but keeps custom classNames', async () => {
+	const testCases = ALL_COMPONENTS.reduce(
+		(acc, { themeKey, styles }) => {
+			acc[themeKey] = { className: styles, noStyle: true };
+			return acc;
+		},
+		{} as Record<string, ThemeValue>
+	);
+
+	const test = <ConsentManagerDialog scrollLock open theme={testCases} />;
+
+	await testComponentStyles({
+		component: test,
+		testCases: ALL_COMPONENTS.map(({ testId, styles }) => ({
+			testId,
+			styles: { className: styles },
+		})),
+	});
+});
+
 test('Theme prop handles mixed format (string and object) correctly', async () => {
 	const mixedTheme: ConsentManagerDialogTheme = {
 		'dialog.root': {
