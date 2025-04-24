@@ -89,7 +89,7 @@ const ALL_COMPONENTS: ComponentTestCase[] = [
 	},
 ];
 
-test('Theme prop applies string classnames to all components', async () => {
+test('should apply string classNames from theme prop to all banner elements', async () => {
 	const test = (
 		<CookieBanner
 			scrollLock
@@ -112,7 +112,7 @@ test('Theme prop applies string classnames to all components', async () => {
 	});
 });
 
-test('Theme prop supports object format with className and style for all components', async () => {
+test('should apply className and style objects from theme prop to all banner elements', async () => {
 	const style = {
 		backgroundColor: '#ffffff',
 		padding: '20px',
@@ -154,7 +154,7 @@ test('Theme prop supports object format with className and style for all compone
 	});
 });
 
-test('No style prop removes default styles but keeps custom classNames', async () => {
+test('should remove default styles but keep custom classNames when top-level noStyle prop is true', async () => {
 	const test = (
 		<CookieBanner
 			scrollLock
@@ -179,7 +179,7 @@ test('No style prop removes default styles but keeps custom classNames', async (
 	});
 });
 
-test('No style being passed in to each component style removes default styles but keeps custom classNames', async () => {
+test('should remove default styles but keep custom classNames when theme object provides noStyle: true', async () => {
 	const testCases = ALL_COMPONENTS.reduce(
 		(acc, { themeKey, styles }) => {
 			acc[themeKey] = { className: styles, noStyle: true };
@@ -199,7 +199,7 @@ test('No style being passed in to each component style removes default styles bu
 	});
 });
 
-test('Theme prop handles mixed format (string and object) correctly', async () => {
+test('should correctly apply styles when theme prop uses mixed string and object formats', async () => {
 	const mixedTheme: CookieBannerTheme = {
 		'banner.root': {
 			className: 'custom-root',
@@ -234,7 +234,7 @@ test('Theme prop handles mixed format (string and object) correctly', async () =
 	});
 });
 
-test('Theme prop handles edge cases gracefully', async () => {
+test('should handle empty strings and empty style objects in theme prop gracefully', async () => {
 	const edgeCaseTheme: CookieBannerTheme = {
 		'banner.root': '',
 		'banner.card': '',
