@@ -1,5 +1,11 @@
 # @c15t/react
 
+## 1.1.5
+
+### Patch Changes
+
+- [#208](https://github.com/c15t/c15t/pull/208) [`41bfb71`](https://github.com/c15t/c15t/commit/41bfb713c8a08dade25dabb5c4215fd2e3a59f40) Thanks [@KayleeWilliams](https://github.com/KayleeWilliams)! - fix(react): no style component theme not removing default classes
+
 ## 1.1.4
 
 ### Patch Changes
