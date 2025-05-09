@@ -1,16 +1,19 @@
-import { type Logger, createLogger } from '@doubletie/logger';
-import { OpenAPIGenerator } from '@orpc/openapi';
+import { createLogger } from '@doubletie/logger';
 import { OpenAPIHandler } from '@orpc/openapi/fetch';
 import { CORSPlugin } from '@orpc/server/plugins';
-import { ZodToJsonSchemaConverter } from '@orpc/zod';
 import { DoubleTieError, ERROR_CODES } from '~/pkgs/results';
 import type { C15TContext, C15TOptions, C15TPlugin } from '~/types';
-import packageJson from '../package.json';
 import { init } from './init';
+import { createCORSOptions, processCors } from './middleware/cors';
+import {
+	createDocsUI,
+	createOpenAPIConfig,
+	createOpenAPISpec,
+} from './middleware/openapi';
 import { withRequestSpan } from './pkgs/api-router/telemetry';
-import { isOriginTrusted } from './pkgs/api-router/utils/cors';
 import { getIp } from './pkgs/api-router/utils/ip';
 import { router } from './router';
+
 /**
  * Type representing an API route
  */
@@ -92,22 +95,6 @@ export interface C15TInstance<PluginTypes extends C15TPlugin[] = C15TPlugin[]> {
 	getDocsUI: () => string;
 }
 
-// Define middleware context interface
-interface MiddlewareContext {
-	logger?: Logger;
-	adapter: unknown;
-	registry: unknown;
-	generateId: unknown;
-	ipAddress?: string;
-	origin?: string;
-	trustedOrigin?: boolean;
-	path?: string;
-	method?: string;
-	headers?: Headers;
-	userAgent?: string;
-	[key: string]: unknown;
-}
-
 /**
  * Creates a new c15t consent management instance.
  *
@@ -119,67 +106,22 @@ export const c15tInstance = <PluginTypes extends C15TPlugin[] = C15TPlugin[]>(
 	// Initialize context
 	const contextPromise = init(options);
 
-	const corsOptions = options.trustedOrigins
-		? {
-				// When specific origins are configured
-				origin: options.trustedOrigins.includes('*')
-					? '*' // If '*' is in the list, allow all origins
-					: options.trustedOrigins, // Otherwise use the specific list
-				credentials: true, // Allow cookies/auth headers
-				methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-				allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
-				maxAge: 86400,
-			}
-		: {
-				// Default configuration when no origins specified
-				origin: '*', // Allow all origins
-				credentials: false, // Can't use credentials with wildcard origin
-				methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-				allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
-				maxAge: 86400,
-			};
+	// Replace the inline corsOptions with the imported one
+	const corsOptions = createCORSOptions(options.trustedOrigins);
 
 	// Create the oRPC handler with plugins
 	const rpcHandler = new OpenAPIHandler(router, {
 		plugins: [new CORSPlugin(corsOptions)],
 	});
 
-	// Initialize OpenAPI generator with schema converters
-	const openAPIGenerator = new OpenAPIGenerator({
-		schemaConverters: [new ZodToJsonSchemaConverter()],
-	});
-
-	// Set up OpenAPI configuration with defaults
-	const openApiConfig = {
-		enabled: true,
-		specPath: '/spec.json',
-		docsPath: '/docs',
-		...(options.openapi || {}),
-	};
-
-	// Default OpenAPI options
-	const defaultOpenApiOptions = {
-		info: {
-			title: options.appName || 'c15t API',
-			version: packageJson.version,
-			description: 'API for consent management',
-		},
-		servers: [{ url: '/' }],
-		security: [{ bearerAuth: [] }],
-		// components: {
-		// 	securitySchemes: {
-		// 		bearerAuth: {
-		// 			type: 'http',
-		// 			scheme: 'bearer',
-		// 		},
-		// 	},
-		// },
-	};
+	// Set up OpenAPI configuration
+	const openApiConfig = createOpenAPIConfig(options);
+	const getDocsUI = () => createDocsUI(options);
 
 	/**
 	 * Process IP tracking and add it to the context
 	 */
-	const processIp = (request: Request, context: MiddlewareContext) => {
+	const processIp = (request: Request, context: C15TContext) => {
 		const ip = getIp(request, options);
 		if (ip) {
 			context.ipAddress = ip;
@@ -188,27 +130,9 @@ export const c15tInstance = <PluginTypes extends C15TPlugin[] = C15TPlugin[]>(
 	};
 
 	/**
-	 * Process CORS validation and add it to the context
-	 */
-	const processCors = (request: Request, context: MiddlewareContext) => {
-		const origin = request.headers.get('origin');
-		if (origin && options.trustedOrigins) {
-			const trusted = isOriginTrusted(
-				origin,
-				options.trustedOrigins,
-				context.logger
-			);
-
-			context.origin = origin;
-			context.trustedOrigin = trusted;
-		}
-		return context;
-	};
-
-	/**
 	 * Add telemetry tracking to the context
 	 */
-	const processTelemetry = (request: Request, context: MiddlewareContext) => {
+	const processTelemetry = (request: Request, context: C15TContext) => {
 		const url = new URL(request.url);
 		const path = url.pathname;
 		const method = request.method;
@@ -235,87 +159,30 @@ export const c15tInstance = <PluginTypes extends C15TPlugin[] = C15TPlugin[]>(
 	};
 
 	/**
-	 * Generate the OpenAPI specification document
-	 */
-	const getOpenAPISpec = (async (): Promise<Record<string, unknown>> => {
-		// Memoise once per process
-		if (getOpenAPISpec.cached) {
-			return getOpenAPISpec.cached;
-		}
-
-		// Start with our defaults
-		const mergedOptions = { ...defaultOpenApiOptions };
-
-		// If user provided options, merge them with defaults
-		if (openApiConfig.options) {
-			// biome-ignore lint: OpenAPI options are dynamically merged
-			const userOptions = openApiConfig.options as Record<string, any>;
-
-			// Handle nested info object (title, description, version) specially
-			if (userOptions.info) {
-				mergedOptions.info = {
-					...defaultOpenApiOptions.info,
-					...userOptions.info,
-				};
-			}
-
-			// For all other top-level properties, override defaults with user settings
-			for (const [key, value] of Object.entries(userOptions)) {
-				if (key !== 'info') {
-					(mergedOptions as Record<string, unknown>)[key] = value;
-				}
-			}
-		}
-
-		// We need to cast to the expected type due to incompatibilities between the types
-		// This is safe as we control the options format and it's compatible with what the generator expects
-		const spec = await openAPIGenerator.generate(
-			router,
-			mergedOptions as Record<string, unknown>
-		);
-		getOpenAPISpec.cached = spec;
-		return spec;
-	}) as (() => Promise<Record<string, unknown>>) & {
-		cached?: Record<string, unknown>;
-	};
-
-	/**
-	 * Generate the default UI for API documentation
-	 */
-	const getDocsUI = () => {
-		// If a custom template is provided, use it
-		if (openApiConfig.customUiTemplate) {
-			return openApiConfig.customUiTemplate;
-		}
-
-		// Otherwise, return the default Scalar UI
-		return `
-    <!doctype html>
-    <html>
-      <head>
-        <title>${options.appName || 'c15t API'} Documentation</title>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" type="image/svg+xml" href="https://orpc.unnoq.com/icon.svg" />
-      </head>
-      <body>
-        <script
-          id="api-reference"
-          data-url="${encodeURI(openApiConfig.specPath)}">
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
-      </body>
-    </html>
-    `;
-	};
-
-	/**
 	 * Handle OpenAPI spec requests
 	 */
 	const handleOpenApiSpecRequest = async (
 		url: URL
 	): Promise<Response | null> => {
 		if (openApiConfig.enabled && url.pathname === openApiConfig.specPath) {
+			const ctxResult = await contextPromise;
+			if (!ctxResult.isOk()) {
+				throw ctxResult.error;
+			}
+			const ctx = ctxResult.value;
+			const orpcContext = {
+				adapter: ctx.adapter,
+				registry: ctx.registry,
+				logger: ctx.logger,
+				generateId: ctx.generateId,
+				headers: new Headers(),
+				appName: options.appName || 'c15t',
+				options,
+				trustedOrigins: options.trustedOrigins || [],
+				baseURL: options.baseURL || '/',
+				tables: ctx.tables,
+			};
+			const getOpenAPISpec = createOpenAPISpec(orpcContext, options);
 			const spec = await getOpenAPISpec();
 			return new Response(JSON.stringify(spec), {
 				status: 200,
@@ -408,32 +275,52 @@ export const c15tInstance = <PluginTypes extends C15TPlugin[] = C15TPlugin[]>(
 		ctx: C15TContext
 	): Promise<Response> => {
 		// Create context for the handler with c15t specifics
-		const orpcContext: MiddlewareContext = {
+		const orpcContext = {
 			adapter: ctx.adapter,
 			registry: ctx.registry,
 			logger: ctx.logger,
 			generateId: ctx.generateId,
 			headers: request.headers,
 			userAgent: request.headers.get('user-agent') || undefined,
+			appName: options.appName || 'c15t',
+			options,
+			trustedOrigins: options.trustedOrigins || [],
+			baseURL: options.baseURL || '/',
+			tables: ctx.tables,
 		};
 
 		// Apply middleware processing to enrich the context
 		processIp(request, orpcContext);
-		processCors(request, orpcContext);
+		processCors(request, orpcContext, options.trustedOrigins);
 		processTelemetry(request, orpcContext);
 
 		// Use oRPC handler to handle the request with our enhanced context
 		const handlerContext = orpcContext as Record<string, unknown>;
+
+		orpcContext.logger.debug?.('Handling prefix', {
+			prefix: (options.basePath as `/${string}`) || '/',
+		});
+
 		const { matched, response } = await rpcHandler.handle(request, {
-			prefix: '/',
+			prefix: (options.basePath as `/${string}`) || '/',
 			context: handlerContext,
 		});
 
 		// Return the response if handler matched
 		if (matched && response) {
+			orpcContext.logger.debug('Handler matched', {
+				request,
+				matched,
+				response,
+			});
 			return response;
 		}
 
+		orpcContext.logger.debug('No handler matched', {
+			request,
+			matched,
+			response,
+		});
 		// If no handler matched, return 404
 		return new Response('Not Found', { status: 404 });
 	};
@@ -444,6 +331,11 @@ export const c15tInstance = <PluginTypes extends C15TPlugin[] = C15TPlugin[]>(
 	const handler = async (request: Request): Promise<Response> => {
 		try {
 			const url = new URL(request.url);
+			// Add this debug log:
+			createLogger(options.logger)?.debug?.('Incoming request', {
+				method: request.method,
+				pathname: url.pathname,
+			});
 
 			// Check for OpenAPI spec or docs UI requests
 			const openApiResponse = await handleOpenApiSpecRequest(url);
@@ -462,6 +354,19 @@ export const c15tInstance = <PluginTypes extends C15TPlugin[] = C15TPlugin[]>(
 				throw ctxResult.error;
 			}
 			const ctx = ctxResult.value;
+
+			// After options/baseURL/basePath is set/used
+			const basePath = options.basePath || options.baseURL || '/';
+			createLogger(options.logger)?.debug?.('[c15t] Using basePath/baseURL', {
+				basePath,
+			});
+
+			// Add this debug log:
+			createLogger(options.logger)?.debug?.('[c15t] Routing request', {
+				method: request.method,
+				url: request.url,
+				prefix: basePath,
+			});
 
 			// Handle API request
 			return await handleApiRequest(request, ctx);
@@ -518,7 +423,27 @@ export const c15tInstance = <PluginTypes extends C15TPlugin[] = C15TPlugin[]>(
 		...createNextHandlers(),
 
 		// OpenAPI functionality
-		getOpenAPISpec,
+		getOpenAPISpec: async () => {
+			const ctxResult = await contextPromise;
+			if (!ctxResult.isOk()) {
+				throw ctxResult.error;
+			}
+			const ctx = ctxResult.value;
+			const orpcContext = {
+				adapter: ctx.adapter,
+				registry: ctx.registry,
+				logger: ctx.logger,
+				generateId: ctx.generateId,
+				headers: new Headers(),
+				appName: options.appName || 'c15t',
+				options,
+				trustedOrigins: options.trustedOrigins || [],
+				baseURL: options.baseURL || '/',
+				tables: ctx.tables,
+			};
+			const getOpenAPISpec = createOpenAPISpec(orpcContext, options);
+			return getOpenAPISpec();
+		},
 		getDocsUI,
 	};
 };
