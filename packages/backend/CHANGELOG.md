@@ -1,5 +1,33 @@
 # @c15t/backend
 
+## 1.2.2-canary-20250602152741
+
+### Patch Changes
+
+- 131a2ff: fix(backend): user agent not being stored
+
+## 1.2.2-canary-20250521133509
+
+### Patch Changes
+
+- e4b9778: fix(backend): show consent banner returning true in US etc
+
+## 1.2.2-canary-20250514203718
+
+### Patch Changes
+
+- f24f11b: bump package
+- Updated dependencies [f24f11b]
+  - @c15t/translations@1.2.2-canary-20250514203718
+
+## 1.2.2-canary-20250514183211
+
+### Patch Changes
+
+- f64f000: feat: added @c15t/nextjs, @c15t/translations for better integration, server-side translations & fetching of consent banner
+- Updated dependencies [f64f000]
+  - @c15t/translations@1.2.2-canary-20250514183211
+
 ## 1.2.1
 
 ### Patch Changes

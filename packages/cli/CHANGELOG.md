@@ -1,5 +1,51 @@
 # @c15t/cli
 
+## 1.2.2-canary-20250603153501
+
+### Patch Changes
+
+- Updated dependencies [e50e925]
+  - @c15t/react@1.2.2-canary-20250603153501
+
+## 1.2.2-canary-20250602152741
+
+### Patch Changes
+
+- Updated dependencies [131a2ff]
+  - @c15t/backend@1.2.2-canary-20250602152741
+  - @c15t/react@1.2.2-canary-20250602152741
+
+## 1.2.2-canary-20250521133509
+
+### Patch Changes
+
+- Updated dependencies [e4b9778]
+  - @c15t/backend@1.2.2-canary-20250521133509
+  - @c15t/react@1.2.2-canary-20250521133509
+
+## 1.2.2-canary-20250520100232
+
+### Patch Changes
+
+- 9b5684c: feat(cli): replace config.ts with inline config, @c15t/nextjs & various bug fixes
+
+## 1.2.2-canary-20250514203718
+
+### Patch Changes
+
+- f24f11b: bump package
+- Updated dependencies [f24f11b]
+  - @c15t/backend@1.2.2-canary-20250514203718
+  - @c15t/react@1.2.2-canary-20250514203718
+
+## 1.2.2-canary-20250514183211
+
+### Patch Changes
+
+- Updated dependencies [f64f000]
+  - @c15t/backend@1.2.2-canary-20250514183211
+  - @c15t/react@1.2.2-canary-20250514183211
+
 ## 1.2.1
 
 ### Patch Changes
