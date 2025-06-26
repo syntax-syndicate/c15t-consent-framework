@@ -65,12 +65,14 @@ export const showConsentBanner = os.consent.showBanner.handler(
 		};
 
 		const countryCode =
+			normalizeHeader(headers.get('x-c15t-country')) ??
 			normalizeHeader(headers.get('cf-ipcountry')) ??
 			normalizeHeader(headers.get('x-vercel-ip-country')) ??
 			normalizeHeader(headers.get('x-amz-cf-ipcountry')) ??
 			normalizeHeader(headers.get('x-country-code'));
 
 		const regionCode =
+			normalizeHeader(headers.get('x-c15t-region')) ??
 			normalizeHeader(headers.get('x-vercel-ip-country-region')) ??
 			normalizeHeader(headers.get('x-region-code'));
 
